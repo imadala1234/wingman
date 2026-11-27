@@ -2,11 +2,11 @@
 <html lang="en-AU">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#0A1226">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="WingMan">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
@@ -46,7 +46,7 @@
   color-scheme: dark;
 }
 * { box-sizing: border-box; }
-html { height: 100%; overflow: hidden; background: var(--bg); }
+html { height: 100%; overflow: hidden; background: var(--surface); }
 body { position: fixed; inset: 0; margin: 0; padding: 0; display: flex; flex-direction: column; background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.45; }
 .gut { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
 button, input, select, textarea { font: inherit; color: inherit; }
@@ -60,7 +60,6 @@ h2 { font-family: var(--f-display); font-weight: 600; font-size: 20px; letter-sp
 
 /* Shell */
 .top { flex: none; border-bottom: 1px solid var(--line); background: var(--bg); padding-top: env(safe-area-inset-top, 0px); }
-body::before { content: ''; position: fixed; top: 0; left: 0; right: 0; height: env(safe-area-inset-top, 0px); background: #0A1226; z-index: 60; pointer-events: none; }
 #top { max-width: 520px; margin: 0 auto; display: flex; flex-direction: column; gap: 10px; padding-block: 8px 10px; }
 .scroll { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
 .app { max-width: 520px; margin: 0 auto; padding-block: 12px 24px; display: flex; flex-direction: column; gap: 14px; }
@@ -1312,18 +1311,6 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
   applyAppearance();
   var h0 = location.hash.slice(1); if (h0 === 'journey' || h0 === 'passports') { tsub = h0; h0 = 'traveller'; } if (ALL.indexOf(h0) >= 0) view = h0;
   render();
-})();
-</script>
-<script>
-/* iPhone home-screen app: the layout viewport can end above the home indicator, so size the shell to the real screen. */
-(function () {
-  var sa = window.navigator.standalone === true || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
-  function fit() {
-    if (!sa) return;
-    var por = window.innerHeight >= window.innerWidth, h = por ? Math.max(screen.width, screen.height) : Math.min(screen.width, screen.height);
-    document.body.style.bottom = 'auto'; document.body.style.height = h + 'px';
-  }
-  fit(); window.addEventListener('resize', fit); window.addEventListener('orientationchange', function () { setTimeout(fit, 250); });
 })();
 </script>
 <script>if("serviceWorker" in navigator){window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){});});}</script>
