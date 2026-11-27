@@ -2,7 +2,7 @@
 <html lang="en-AU">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
 <meta name="theme-color" content="#0A1226">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="WingMan">
@@ -50,6 +50,10 @@ html { height: 100%; overflow: hidden; background: var(--surface); }
 body { position: fixed; inset: 0; margin: 0; padding: 0; display: flex; flex-direction: column; background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.45; }
 .gut { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
 button, input, select, textarea { font: inherit; color: inherit; }
+input, select, textarea { font-size: 16px !important; }
+.f { min-width: 0; }
+.f input[type=date], .drow input[type=date] { -webkit-appearance: none; appearance: none; display: block; min-width: 0; max-width: 100%; box-sizing: border-box; text-align: left; }
+.f input[type=date]::-webkit-date-and-time-value { text-align: left; }
 button { cursor: pointer; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 h2 { font-family: var(--f-display); font-weight: 600; font-size: 20px; letter-spacing: .03em; text-transform: uppercase; margin: 0; }
@@ -59,7 +63,7 @@ h2 { font-family: var(--f-display); font-weight: 600; font-size: 20px; letter-sp
 .sechead { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
 
 /* Shell */
-.top { flex: none; border-bottom: 1px solid var(--line); background: var(--bg); padding-top: calc(14px + env(safe-area-inset-top, 0px)); }
+.top { flex: none; border-bottom: 1px solid var(--line); background: color-mix(in srgb, var(--accent) 9%, var(--surface)); padding-top: calc(14px + env(safe-area-inset-top, 0px)); }
 #top { max-width: 520px; margin: 0 auto; display: flex; flex-direction: column; gap: 10px; padding-block: 8px 10px; }
 .scroll { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
 .app { max-width: 520px; margin: 0 auto; padding-block: 12px 24px; display: flex; flex-direction: column; gap: 14px; }
@@ -722,7 +726,7 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
   function passportsBody() {
     var h = '', ps = S.passports.slice().sort(function (a, b) { return pdays(a) - pdays(b); });
     h += '<section class="section">' + (ps.length ? ps.map(passportCard).join('') : '<div class="list"><div class="empty">No passports yet. Tap the + button to add a traveller and their passport.</div></div>') + noPassportCards() +
-      '<p class="note">Entries above are samples. Numbers stay hidden until you tap Show. Many countries want at least 6 months of validity left on arrival, so WingMan warns you from 6 months out.</p></section>';
+      '</section>';
     return h;
   }
   function travellerView() {
@@ -1174,7 +1178,7 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
       '<div class="row"><div><div class="t">Live flight data key</div><div class="d">' + (adbKey() ? 'Saved on this phone only. Flight search uses real schedules.' : 'Paste your AeroDataBox key to search real flights.') + '</div></div><span class="pill ' + (adbKey() ? 'ok' : 'warn') + '">' + (adbKey() ? 'Set' : 'Needed') + '</span></div>' +
       '<div class="f" style="margin:4px 0 8px"><input id="adbkey" type="password" placeholder="Paste key here" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Flight data key"></div><div class="btns"><button class="btn primary sm" data-act="savekey">Save key</button>' + (adbKey() ? '<button class="btn sm" data-act="clearkey">Remove key</button>' : '') + '</div>' +
       '<div class="row"><div><div class="t">Weather</div><div class="d">Conditions at departure and arrival airports.</div></div><span class="pill warn">Simulated</span></div></div>' +
-      '<div class="card"><span class="label">Prototype</span><div class="btns"><button class="btn sm" data-act="resetdemo">Reset sample data</button><button class="btn sm" data-act="clear">Clear all flights</button></div><p class="note" style="margin:0">Changes here stay in this browser only. Sheets, Drive and live tracking get connected in the real build.</p></div></section>';
+      '</section>';
   }
 
   window.addEventListener('load', function () { if (G.linked) setTimeout(function () { gSync(false); }, 1500); });
