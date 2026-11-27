@@ -283,6 +283,19 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
 
 /* Search, tracked flights, map */
 .f[hidden] { display: none; }
+.subt { margin: 2px 0 10px; color: var(--muted); font-weight: 500; }
+.lrowb { all: unset; box-sizing: border-box; width: 100%; display: flex; align-items: center; gap: 14px; min-height: 52px; padding: 8px 2px; cursor: pointer; border-top: 1px solid var(--line); }
+.lrowb:first-of-type { border-top: 0; }
+.lrowb .ico { flex: none; width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; background: var(--surface2); color: var(--accent-text); font-family: var(--f-mono); font-weight: 600; font-size: 12px; }
+.lrowb .ico svg { width: 22px; height: 22px; }
+.lrowb .tx { min-width: 0; display: flex; flex-direction: column; }
+.lrowb .tx b { font-weight: 600; }
+.lrowb .tx small { color: var(--muted); font-size: 13px; }
+.mchip { all: unset; box-sizing: border-box; display: inline-flex; align-items: center; gap: 6px; padding: 5px 12px; border-radius: 999px; background: var(--surface2); font-weight: 600; font-size: 13px; cursor: pointer; }
+.rcols { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.rcols input { width: 100%; min-height: 46px; padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); text-transform: uppercase; }
+.chkrow { display: flex; gap: 10px; align-items: center; justify-content: flex-start; min-height: 36px; font-size: 15px; color: var(--ink); }
+.chkrow input { flex: none; width: 22px; height: 22px; min-height: 0; padding: 0; margin: 0; accent-color: var(--accent); }
 .sbox { position: relative; }
 .sbox input { width: 100%; min-height: 46px; padding: 10px 12px 10px 40px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); }
 .sbox svg { position: absolute; left: 13px; top: 50%; transform: translateY(-50%); width: 18px; height: 18px; color: var(--muted); pointer-events: none; }
@@ -579,10 +592,10 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
   };
 
   /* ---------- navigation ---------- */
-  var MAIN = ['home', 'flights', 'live', 'traveller', 'settings'], ALL = MAIN.concat(['alerts', 'add', 'add-traveller', 'search']);
+  var MAIN = ['home', 'flights', 'live', 'traveller', 'settings'], ALL = MAIN.concat(['alerts', 'add', 'add-manual', 'add-traveller', 'search']);
   var FABV = ['home', 'flights', 'live', 'traveller'];
   var view = 'home', prev = 'home', detail = null, revealed = {}, tsub = 'journey', lsub = 'flights', lview = 'details', liveSel = null, lastChecked = Date.now();
-  var searchQ = '', searchDate = ymd(0), addWho = '';
+  var searchQ = '', searchDate = ymd(0), addWho = '', addMode = '', rFrom = '', rTo = '';
   var FAB_PLUS = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.4" stroke-linecap="square" aria-hidden="true"><path d="M12 4.5v15M4.5 12h15"/></svg>';
   var FAB_SEARCH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6"/><path d="M15.2 15.2 20 20"/></svg>';
   var FABL = { live: 'Search flights to track', traveller: 'Add traveller or passport' };
@@ -599,10 +612,12 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
   }
   /* Anything wrapped by stick() renders in the fixed header; the rest scrolls. */
   function stick(x) { return '\u0001' + x + '\u0002'; }
+  var IC_X = '<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>';
   function head(title, o) {
     o = o || {};
     var right;
-    if (o.back) right = '<button class="btn sm" type="button" data-go="prev">Back</button>';
+    if (o.close) right = '<button class="bell" type="button" data-go="prev" aria-label="Close">' + IC_X + '</button>';
+    else if (o.back) right = '<button class="btn sm" type="button" data-go="' + (o.backTo || 'prev') + '">Back</button>';
     else { var n = unreadCount(); right = '<button class="bell" type="button" data-go="alerts" aria-label="Alerts' + (n ? ', ' + n + ' unread' : '') + '">' + IC.bell + (n ? '<span class="badge">' + n + '</span>' : '') + '</button>'; }
     return stick('<div class="pagehead"><div class="titles">' + (o.eyebrow ? '<span class="label">' + o.eyebrow + '</span>' : '') + '<h1>' + title + '</h1></div>' + right + '</div>');
   }
@@ -847,12 +862,13 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
     return res;
   }
   function resultsHtml() {
-    var q = searchQ.trim(), h = '';
+    var AD = view === 'add', q = AD && addMode === 'route' ? ((rFrom.trim() ? 'from ' + rFrom.trim() : '') + ' ' + (rTo.trim() ? 'to ' + rTo.trim() : '')).trim() : searchQ.trim(), h = '';
+    if (!q && AD) return addLanding();
     if (!q) return '<div class="note">Search by flight number, airline, airport or route. Try one of these:</div><div class="hints">' +
       ['QF520', 'SQ 232', 'Sydney to Brisbane', 'SYD SIN', 'Qantas Melbourne', 'to Hyderabad', 'Emirates'].map(function (x) { return '<button type="button" class="hint" data-hint="' + x + '">' + x + '</button>'; }).join('') +
       '</div><p class="note">Schedules here are sample data. The real build searches live airline schedules worldwide.</p>';
     var key = q.toLowerCase().replace(/[^a-z0-9]/g, ''), now = Date.now(), out = [], hidden = 0;
-    var mine = upcoming().filter(function (f) { return f.ref && key.indexOf(f.ref.toLowerCase()) >= 0; });
+    var mine = AD ? [] : upcoming().filter(function (f) { return f.ref && key.indexOf(f.ref.toLowerCase()) >= 0; });
     searchCat(q).forEach(function (e) { var f = mkFlight(e, searchDate); if (effArr(f) > now) out.push(f); else hidden++; });
     out.sort(function (x, y) { return x.dep - y.dep; });
     var shown = out.slice(0, 12);
@@ -863,7 +879,7 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
       var A = AP[f.from], B = AP[f.to], on = S.tracked.some(function (t) { return t.key === f.key; }), air = now > f.dep;
       h += '<div class="card tight rcard"><div class="sechead"><span class="label">' + esc(f.airline) + ' &middot; ' + esc(f.no) + '</span><span class="pill ' + (air ? 'ok' : 'idle') + '">' + (air ? 'In the air' : 'Scheduled') + '</span></div>' +
         '<div class="lrow"><div style="min-width:0"><div class="rt">' + f.from + ' to ' + f.to + '</div><div class="rm">' + tf(f.dep, A.tz) + ' ' + A.n + ' &rarr; ' + tf(f.arr, B.tz) + ' ' + B.n + ' &middot; ' + dur(f.dep, f.arr) + '</div></div>' +
-        (on ? '<button class="btn sm" type="button" disabled>Tracking</button>' : '<button class="btn primary sm" type="button" data-track="' + esc(f.key) + '">Track</button>') + '</div></div>';
+        (AD ? (S.flights.some(function (x) { return x.no === f.no && x.dep === f.dep; }) ? '<button class="btn sm" type="button" disabled>Added</button>' : '<button class="btn primary sm" type="button" data-addcat="' + esc(f.key) + '">Add</button>') : on ? '<button class="btn sm" type="button" disabled>Tracking</button>' : '<button class="btn primary sm" type="button" data-track="' + esc(f.key) + '">Track</button>') + '</div></div>';
     });
     if (!shown.length && !mine.length) h += '<div class="card tight"><div class="t" style="font-weight:600">No flights found</div><div class="note">Nothing matched &ldquo;' + esc(q) + '&rdquo; on ' + df(L(searchDate + ' 12:00', MY_TZ), MY_TZ) + '. Try a flight number such as QF520, two airports such as SYD BNE, or a city such as Singapore.' + (hidden ? ' ' + hidden + ' matching flight' + (hidden > 1 ? 's have' : ' has') + ' already landed. Pick a later date.' : '') + '</div>' + (hidden ? '<div class="btns"><button type="button" class="btn primary sm" data-sdate="1">Try tomorrow</button></div>' : '') + '</div>';
     else {
@@ -873,18 +889,67 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
     return h;
   }
   function searchView() {
-    var h = head('Find a flight', { back: true });
+    var h = head('Find a flight', { close: true });
     h += stick('<div class="sbox"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6"/><path d="M15.2 15.2 20 20"/></svg>' +
       '<input id="sq" type="search" inputmode="search" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="QF520, SYD to BNE, Qantas Sydney" value="' + esc(searchQ) + '" aria-label="Search flights"></div>' +
       '<div class="drow"><button type="button" class="btn sm" data-sdate="0">Today</button><button type="button" class="btn sm" data-sdate="1">Tomorrow</button><input id="sdate" type="date" value="' + searchDate + '" aria-label="Flight date"></div>');
     return h + '<div id="results" class="section">' + resultsHtml() + '</div>';
   }
   function bindSearch() {
-    var sq = document.getElementById('sq'); if (!sq) return;
-    function upd() { var r = document.getElementById('results'); if (r) r.innerHTML = resultsHtml(); }
-    sq.addEventListener('input', function () { searchQ = sq.value; upd(); });
-    document.getElementById('sdate').addEventListener('change', function (e) { searchDate = e.target.value || ymd(0); upd(); });
-    if (!sq.value) setTimeout(function () { try { sq.focus(); } catch (x) {} }, 60);
+    var sq = document.getElementById('sq'), rf = document.getElementById('rf'), rt = document.getElementById('rt'), sd = document.getElementById('sdate');
+    if (!sd) return;
+    function upd() { var x = document.getElementById('results'); if (x) x.innerHTML = resultsHtml(); }
+    if (sq) sq.addEventListener('input', function () { searchQ = sq.value; upd(); });
+    if (rf) { rf.addEventListener('input', function () { rFrom = rf.value; upd(); }); rt.addEventListener('input', function () { rTo = rt.value; upd(); }); }
+    sd.addEventListener('change', function (e) { searchDate = e.target.value || ymd(0); upd(); });
+    var f0 = sq && !sq.value ? sq : rf && !rf.value ? rf : null;
+    if (f0) setTimeout(function () { try { f0.focus(); } catch (x) {} }, 60);
+  }
+  var IC_SEARCH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6"/><path d="M15.2 15.2 20 20"/></svg>';
+  function addFlightView() {
+    var h = head('Add flight', { close: true }), box;
+    if (addMode === 'route') box = '<div class="rcols"><input id="rf" list="apts" placeholder="From (SYD)" value="' + esc(rFrom) + '" autocomplete="off" autocapitalize="characters" aria-label="From airport"><input id="rt" list="apts" placeholder="To (BNE)" value="' + esc(rTo) + '" autocomplete="off" autocapitalize="characters" aria-label="To airport"></div>';
+    else box = '<div class="sbox">' + IC_SEARCH + '<input id="sq" type="search" inputmode="search" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="' + (addMode === 'number' ? 'Flight number, e.g. QF520' : 'Qantas, SYD, or QF123') + '" value="' + esc(searchQ) + '" aria-label="Search flights"></div>';
+    h += stick('<p class="subt">' + (addMode === 'route' ? 'Where are you flying from and to?' : addMode === 'number' ? 'Enter the flight number' : 'Enter airline, airport, or flight') + '</p>' + box +
+      (addMode ? '<div><button type="button" class="mchip" data-addmode="">' + (addMode === 'route' ? 'Find by route' : 'Find by flight number') + ' &times;</button></div>' : '') +
+      '<div class="drow"><button type="button" class="btn sm" data-sdate="0">Today</button><button type="button" class="btn sm" data-sdate="1">Tomorrow</button><input id="sdate" type="date" value="' + searchDate + '" aria-label="Flight date"></div>');
+    return h + '<div id="results" class="section">' + resultsHtml() + '</div>';
+  }
+  function addLanding() {
+    if (addMode === 'route') return '<div class="note">Choose the departure and arrival airports, then the date. Flights on that route appear here.</div>';
+    if (addMode === 'number') return '<div class="note">Type the airline code and number, such as QF520 or SQ 232, then pick the date.</div>';
+    var IR = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="6" cy="18" r="2.2"/><circle cx="18" cy="6" r="2.2"/><path d="M8 17c6-1 2-9 8-10"/></svg>',
+      IT = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v2a2 2 0 0 0 0 4v2a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2v-2a2 2 0 0 0 0-4Z"/><path d="M9 9v6" stroke-dasharray="1.5 2"/></svg>',
+      IE = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M5 19l1-4L17 4l3 3L9 18l-4 1Z"/></svg>';
+    var al = ['QF', 'VA', 'JQ', 'SQ', 'EK', 'AI'].filter(function (c) { return AIRLINES[c]; }), ap = ['SYD', 'MEL', 'BNE', 'SIN', 'HYD', 'DXB'].filter(function (c) { return AP[c]; });
+    return '<div class="list"><button type="button" class="lrowb" data-addmode="route"><span class="ico">' + IR + '</span><span class="tx"><b>Find by route</b></span></button>' +
+      '<button type="button" class="lrowb" data-addmode="number"><span class="ico">' + IT + '</span><span class="tx"><b>Find by flight number</b></span></button></div>' +
+      '<div class="sechead" style="margin-top:14px"><span class="label">Suggested</span></div><div class="list">' +
+      al.map(function (c) { return '<button type="button" class="lrowb" data-hint="' + esc(AIRLINES[c]) + '"><span class="ico">' + c + '</span><span class="tx"><b>' + esc(AIRLINES[c]) + '</b><small>' + c + '</small></span></button>'; }).join('') +
+      ap.map(function (c) { return '<button type="button" class="lrowb" data-hint="' + c + '"><span class="ico">' + c + '</span><span class="tx"><b>' + esc(AP[c].n) + '</b><small>' + c + ' &middot; ' + esc(AP[c].n) + '</small></span></button>'; }).join('') + '</div>' +
+      '<div class="sechead" style="margin-top:14px"><span class="label">More</span></div><div class="list"><button type="button" class="lrowb" data-go="add-manual"><span class="ico">' + IE + '</span><span class="tx"><b>Enter details manually</b><small>Any airline, with booking reference and seat</small></span></button></div>' +
+      '<p class="note">Schedules here are sample data. The real build searches live airline schedules.</p>';
+  }
+  function openAddSheet(key) {
+    var p = key.split('|'), e = CAT.filter(function (x) { return x[0] === p[1] && String(x[1]) === p[2]; })[0]; if (!e) return;
+    var f = mkFlight(e, p[3]), A = AP[f.from], B = AP[f.to], trips = []; S.flights.forEach(function (x) { if (trips.indexOf(x.trip) < 0) trips.push(x.trip); });
+    var sh = document.getElementById('sheet'); detail = '__add';
+    sh.innerHTML = '<div class="sheet-bar gut"><div class="sheet-top"><button class="btn sm" type="button" data-act="back">Cancel</button></div></div><div class="sheet-scroll gut"><div class="sheet-in"><form id="confirmForm" novalidate>' +
+      '<div class="card"><span class="label">' + esc(f.airline) + ' &middot; ' + esc(f.no) + ' &middot; ' + dfy(f.dep, A.tz) + '</span><div class="rt" style="font-family:var(--f-display);font-weight:700;font-size:30px;line-height:1.1">' + f.from + ' to ' + f.to + '</div><div class="note" style="margin:4px 0 0">' + tf(f.dep, A.tz) + ' ' + A.n + ' &rarr; ' + tf(f.arr, B.tz) + ' ' + B.n + ' &middot; ' + dur(f.dep, f.arr) + '</div></div>' +
+      '<fieldset style="margin-top:14px"><legend>Booking details (optional)</legend>' +
+      '<div class="f"><label for="cref">Booking reference</label><input id="cref" name="ref" class="caps" autocomplete="off"></div>' +
+      '<div class="f"><label for="cseat">Seat</label><input id="cseat" name="seat" class="caps" autocomplete="off"></div>' +
+      '<div class="f full"><label for="cticket">Ticket number</label><input id="cticket" name="ticket" autocomplete="off"></div>' +
+      '<div class="f full"><label for="ctrip">Trip name</label><input id="ctrip" name="trip" list="ctrips" value="' + esc(B.n + ' trip') + '" autocomplete="off"><datalist id="ctrips">' + trips.map(function (t) { return '<option value="' + esc(t) + '">'; }).join('') + '</datalist></div>' +
+      '<div class="f full"><label>Passengers</label>' + (S.travellers.length ? S.travellers.map(function (t, i) { return '<label class="chkrow"><input type="checkbox" name="pax" value="' + esc(t.name) + '"' + (i === 0 ? ' checked' : '') + '> ' + esc(t.name) + '</label>'; }).join('') : '<div class="note">Add travellers in the Traveller tab.</div>') + '</div>' +
+      '</fieldset><div class="btns" style="margin-top:14px"><button class="btn primary" type="submit">Add to My Flights</button></div></form></div></div>';
+    sh.hidden = false; sh.querySelector('.sheet-scroll').scrollTop = 0;
+    sh.querySelector('#confirmForm').addEventListener('submit', function (ev) {
+      ev.preventDefault(); var fm = ev.target, v = function (n) { return (fm.elements[n].value || '').trim(); };
+      var pax = Array.prototype.map.call(fm.querySelectorAll('input[name=pax]:checked'), function (x) { return x.value; });
+      var nf = { id: 'f' + (S.nextId++), trip: v('trip') || (B.n + ' trip'), airline: f.airline, no: f.no, from: f.from, to: f.to, dep: f.dep, arr: f.arr, delay: 0, ref: v('ref').toUpperCase(), ticket: v('ticket'), seat: v('seat').toUpperCase(), terminal: '', gate: '', pax: pax, notes: '' };
+      S.flights.push(nf); save(); detail = null; sh.hidden = true; go('flights'); toast('Added to My Flights', nf.no + ' ' + nf.from + ' to ' + nf.to);
+    });
   }
   function trackFlight(key) {
     var p = key.split('|'), e = CAT.filter(function (x) { return x[0] === p[1] && String(x[1]) === p[2]; })[0]; if (!e) return;
@@ -1005,7 +1070,7 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
   }
   function addView() {
     var trips = []; S.flights.forEach(function (f) { if (trips.indexOf(f.trip) < 0) trips.push(f.trip); });
-    var h = head('Add flight', { back: true }) + '<section class="section"><form id="addForm" novalidate>';
+    var h = head('Enter details', { backTo: 'add' }) + '<section class="section"><form id="addForm" novalidate>';
     h += '<fieldset><legend>Flight</legend>' +
       '<div class="f"><label for="airline">Airline</label><input id="airline" name="airline" placeholder="Qantas" autocomplete="off"></div>' +
       '<div class="f"><label for="no">Flight number *</label><input id="no" name="no" class="caps" placeholder="QF520" autocomplete="off"></div>' +
@@ -1035,7 +1100,7 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
   }
   function addPassportView() {
     var opts = S.travellers.map(function (t) { return '<option value="' + esc(t.name) + '"' + (addWho === t.name ? ' selected' : '') + '>' + esc(t.name) + (t.rel ? ' (' + esc(t.rel) + ')' : '') + '</option>'; }).join('');
-    var h = head('Add traveller', { back: true }) + '<section class="section"><form id="addPassForm" novalidate><fieldset><legend>Traveller</legend>' +
+    var h = head('Add traveller', { close: true }) + '<section class="section"><form id="addPassForm" novalidate><fieldset><legend>Traveller</legend>' +
       '<div class="f full"><label for="who">Who is this for?</label><select id="who" name="who">' + opts + '<option value="__new"' + (addWho ? '' : ' selected') + '>New traveller...</option></select></div>' +
       '<div class="f full nt"><label for="tname">Full name *</label><input id="tname" name="tname" placeholder="As on the passport" autocomplete="off"></div>' +
       '<div class="f full nt"><label for="trel">Relationship</label><select id="trel" name="trel"><option>Me</option><option>Spouse or partner</option><option>Child</option><option>Parent</option><option>Other family</option><option>Friend</option></select></div></fieldset>' +
@@ -1112,7 +1177,7 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
   function closeDetail() { detail = null; document.getElementById('sheet').hidden = true; render(); }
 
   /* ---------- render ---------- */
-  var VIEWS = { home: homeView, flights: flightsView, live: liveView, traveller: travellerView, settings: settingsView, alerts: alertsView, add: addView, 'add-traveller': addPassportView, search: searchView };
+  var VIEWS = { home: homeView, flights: flightsView, live: liveView, traveller: travellerView, settings: settingsView, alerts: alertsView, add: addFlightView, 'add-manual': addView, 'add-traveller': addPassportView, search: searchView };
   function render() {
     var s = (VIEWS[view] || homeView)(), top = '';
     var body = s.replace(/\u0001([\s\S]*?)\u0002/g, function (m, x) { top += x; return ''; });
@@ -1151,14 +1216,16 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
 
   /* ---------- actions ---------- */
   document.addEventListener('click', function (e) {
-    var el = e.target.closest('[data-go],[data-open],[data-act],[data-sim],[data-del],[data-copy],[data-fab],[data-reveal],[data-pdel],[data-tsub],[data-lsub],[data-live],[data-lview],[data-mapwx],[data-track],[data-untrack],[data-save],[data-hint],[data-sdate],[data-addfor],[data-addpax]');
+    var el = e.target.closest('[data-go],[data-open],[data-act],[data-sim],[data-del],[data-copy],[data-fab],[data-reveal],[data-pdel],[data-tsub],[data-lsub],[data-live],[data-lview],[data-mapwx],[data-track],[data-untrack],[data-save],[data-hint],[data-sdate],[data-addfor],[data-addpax],[data-addcat],[data-addmode]');
     if (!el) return;
-    if (el.hasAttribute('data-fab')) { addWho = ''; go(fabTarget()); return; }
+    if (el.hasAttribute('data-fab')) { addWho = ''; if (fabTarget() === 'add') { addMode = ''; searchQ = ''; rFrom = ''; rTo = ''; } go(fabTarget()); return; }
     if (el.hasAttribute('data-mapwx')) { mapWx = !mapWx; render(); return; }
     if (el.hasAttribute('data-lview')) { lview = el.getAttribute('data-lview'); render(); document.getElementById('scroll').scrollTop = 0; return; }
     if (el.hasAttribute('data-track')) { trackFlight(el.getAttribute('data-track')); return; }
     if (el.hasAttribute('data-untrack')) { var uid = el.getAttribute('data-untrack'); S.tracked = S.tracked.filter(function (x) { return x.id !== uid; }); S.alerts = S.alerts.filter(function (x) { return x.fid !== uid; }); save(); liveSel = null; render(); toast('Stopped tracking'); return; }
     if (el.hasAttribute('data-save')) { saveTracked(el.getAttribute('data-save')); return; }
+    if (el.hasAttribute('data-addcat')) { openAddSheet(el.getAttribute('data-addcat')); return; }
+    if (el.hasAttribute('data-addmode')) { addMode = el.getAttribute('data-addmode'); rFrom = ''; rTo = ''; if (!addMode) searchQ = ''; render(); return; }
     if (el.hasAttribute('data-hint')) { searchQ = el.getAttribute('data-hint'); render(); return; }
     if (el.hasAttribute('data-sdate')) { searchDate = ymd(+el.getAttribute('data-sdate')); render(); return; }
     if (el.hasAttribute('data-addfor')) { addWho = el.getAttribute('data-addfor'); go('add-traveller'); return; }
