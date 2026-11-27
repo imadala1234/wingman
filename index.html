@@ -424,6 +424,8 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
   if (!S || !S.flights || !S.passports) S = seed();
   if (!S.tracked) S.tracked = [];
   if (!S.travellers) { S.travellers = []; S.passports.forEach(function (p) { if (!S.travellers.some(function (t) { return t.name === p.holder; })) S.travellers.push({ id: 't' + S.travellers.length, name: p.holder, rel: '' }); }); }
+  function regSaved() { Object.keys((S && S.airports) || {}).forEach(function (c) { if (!AP[c]) AP[c] = S.airports[c]; }); }
+  regSaved();
   function persist() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
   function save() { S.rev = Date.now(); persist(); gQueue(); }
 
@@ -481,7 +483,7 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
     }).then(function () { G.dirty = false; });
   }
   function gFix() {
-    if (!S.tracked) S.tracked = []; if (!S.travellers) S.travellers = []; if (!S.alerts) S.alerts = []; if (!S.flights) S.flights = []; if (!S.passports) S.passports = [];
+    if (!S.tracked) S.tracked = []; if (!S.airports) S.airports = {}; regSaved(); if (!S.travellers) S.travellers = []; if (!S.alerts) S.alerts = []; if (!S.flights) S.flights = []; if (!S.passports) S.passports = [];
     if (!S.settings) S.settings = { push: true, checkin: true, leave: true, delay: true, gate: true, boarding: true, checkinHrs: 24, leaveMins: 150 };
   }
   function gSync(interactive) {
@@ -864,6 +866,7 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
   function resultsHtml() {
     var AD = view === 'add', q = AD && addMode === 'route' ? ((rFrom.trim() ? 'from ' + rFrom.trim() : '') + ' ' + (rTo.trim() ? 'to ' + rTo.trim() : '')).trim() : searchQ.trim(), h = '';
     if (!q && AD) return addLanding();
+    var lv = q ? liveHtml(q, AD) : null; if (lv !== null) return lv;
     if (!q) return '<div class="note">Search by flight number, airline, airport or route. Try one of these:</div><div class="hints">' +
       ['QF520', 'SQ 232', 'Sydney to Brisbane', 'SYD SIN', 'Qantas Melbourne', 'to Hyderabad', 'Emirates'].map(function (x) { return '<button type="button" class="hint" data-hint="' + x + '">' + x + '</button>'; }).join('') +
       '</div><p class="note">Schedules here are sample data. The real build searches live airline schedules worldwide.</p>';
@@ -881,7 +884,7 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
         '<div class="lrow"><div style="min-width:0"><div class="rt">' + f.from + ' to ' + f.to + '</div><div class="rm">' + tf(f.dep, A.tz) + ' ' + A.n + ' &rarr; ' + tf(f.arr, B.tz) + ' ' + B.n + ' &middot; ' + dur(f.dep, f.arr) + '</div></div>' +
         (AD ? (S.flights.some(function (x) { return x.no === f.no && x.dep === f.dep; }) ? '<button class="btn sm" type="button" disabled>Added</button>' : '<button class="btn primary sm" type="button" data-addcat="' + esc(f.key) + '">Add</button>') : on ? '<button class="btn sm" type="button" disabled>Tracking</button>' : '<button class="btn primary sm" type="button" data-track="' + esc(f.key) + '">Track</button>') + '</div></div>';
     });
-    if (!shown.length && !mine.length) h += '<div class="card tight"><div class="t" style="font-weight:600">No flights found</div><div class="note">Nothing matched &ldquo;' + esc(q) + '&rdquo; on ' + df(L(searchDate + ' 12:00', MY_TZ), MY_TZ) + '. Try a flight number such as QF520, two airports such as SYD BNE, or a city such as Singapore.' + (hidden ? ' ' + hidden + ' matching flight' + (hidden > 1 ? 's have' : ' has') + ' already landed. Pick a later date.' : '') + '</div>' + (hidden ? '<div class="btns"><button type="button" class="btn primary sm" data-sdate="1">Try tomorrow</button></div>' : '') + '</div>';
+    if (!shown.length && !mine.length) h += '<div class="card tight"><div class="t" style="font-weight:600">No flights found</div><div class="note">Nothing matched &ldquo;' + esc(q) + '&rdquo; on ' + df(L(searchDate + ' 12:00', MY_TZ), MY_TZ) + '. Try a flight number such as QF520, two airports such as SYD BNE, or a city such as Singapore.' + (hidden ? ' ' + hidden + ' matching flight' + (hidden > 1 ? 's have' : ' has') + ' already landed. Pick a later date.' : '') + '</div>' + (hidden ? '<div class="btns"><button type="button" class="btn primary sm" data-sdate="1">Try tomorrow</button></div>' : '') + (AD ? '<div class="btns"><button class="btn sm" type="button" data-go="add-manual">Enter details manually</button></div>' : '') + '</div>';
     else {
       if (out.length > shown.length) h += '<p class="note">Showing 12 of ' + out.length + '. Add more detail to narrow it down.</p>';
       if (hidden) h += '<p class="note">' + hidden + ' earlier flight' + (hidden > 1 ? 's' : '') + ' already landed and ' + (hidden > 1 ? 'are' : 'is') + ' not shown.</p>';
@@ -906,6 +909,44 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
     if (f0) setTimeout(function () { try { f0.focus(); } catch (x) {} }, 60);
   }
   var IC_SEARCH = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6"/><path d="M15.2 15.2 20 20"/></svg>';
+  /* ---------- live flight lookup (AeroDataBox via RapidAPI). The key lives only in this phone's storage, never in the repo or the sheet. ---------- */
+  var ADBK = 'wingman-adb', LIVE = {}, LIVEF = {}, LIVEAP = {};
+  function adbKey() { try { return localStorage.getItem(ADBK) || ''; } catch (e) { return ''; } }
+  function tsOf(t) { if (!t) return 0; var u = t.utc || t.scheduledTimeUtc, l = t.local; var x = u ? Date.parse(u.replace(' ', 'T').replace(/Z?$/, 'Z')) : l ? Date.parse(l.replace(' ', 'T')) : 0; return isNaN(x) ? 0 : x; }
+  function regAp(a) {
+    if (!a || !a.iata) return null; var c = a.iata.toUpperCase();
+    if (!AP[c]) { AP[c] = { n: a.municipalityName || a.shortName || a.name || c, tz: a.timeZone || 'UTC', c: a.countryCode || '', la: a.location ? a.location.lat : 0, lo: a.location ? a.location.lon : 0 }; LIVEAP[c] = AP[c]; }
+    return c;
+  }
+  function adbToFlight(x, date) {
+    var d = x.departure || {}, a = x.arrival || {}, fc = regAp(d.airport), tc = regAp(a.airport); if (!fc || !tc) return null;
+    var dt = tsOf(d.scheduledTime || { utc: d.scheduledTimeUtc, local: d.scheduledTimeLocal }), at = tsOf(a.scheduledTime || { utc: a.scheduledTimeUtc, local: a.scheduledTimeLocal }); if (!dt || !at) return null;
+    var no = String(x.number || '').replace(/\s+/g, '').toUpperCase(), key = 'L|' + no + '|' + date + '|' + fc;
+    var f = { id: key, key: key, tracked: true, trip: 'Tracked', airline: (x.airline && x.airline.name) || '', no: no, from: fc, to: tc, dep: dt, arr: at, delay: 0, ref: '', ticket: '', seat: '', terminal: d.terminal || '', gate: d.gate || '', pax: [], notes: '' };
+    LIVEF[key] = f; return f;
+  }
+  function liveFetch(lk) {
+    var p = lk.split('|'); LIVE[lk] = { busy: true };
+    fetch('https://aerodatabox.p.rapidapi.com/flights/number/' + encodeURIComponent(p[0]) + '/' + p[1] + '?withAircraftImage=false&withLocation=true', { headers: { 'X-RapidAPI-Key': adbKey(), 'X-RapidAPI-Host': 'aerodatabox.p.rapidapi.com' } })
+      .then(function (x) { if (x.status === 204 || x.status === 404) return []; if (!x.ok) throw new Error('The flight data service replied ' + x.status + (x.status === 401 || x.status === 403 ? '. Check the key in Settings.' : x.status === 429 ? '. The free allowance may be used up.' : '.')); return x.json(); })
+      .then(function (j) { LIVE[lk] = { list: (Array.isArray(j) ? j : []).map(function (x) { return adbToFlight(x, p[1]); }).filter(Boolean) }; }, function (e) { LIVE[lk] = { err: e.message || 'Could not reach the flight data service.' }; })
+      .then(function () { var x = document.getElementById('results'); if (x && (view === 'add' || view === 'search')) x.innerHTML = resultsHtml(); });
+  }
+  function liveCard(f, AD) {
+    var A = AP[f.from], B = AP[f.to], on = AD ? S.flights.some(function (x) { return x.no === f.no && x.dep === f.dep; }) : S.tracked.some(function (t) { return t.key === f.key; });
+    return '<div class="card tight rcard"><div class="sechead"><span class="label">' + esc(f.airline || 'Flight') + ' &middot; ' + esc(f.no) + '</span><span class="pill idle">Scheduled</span></div>' +
+      '<div class="lrow"><div style="min-width:0"><div class="rt">' + f.from + ' to ' + f.to + '</div><div class="rm">' + tf(f.dep, A.tz) + ' ' + esc(A.n) + ' &rarr; ' + tf(f.arr, B.tz) + ' ' + esc(B.n) + ' &middot; ' + dur(f.dep, f.arr) + '</div></div>' +
+      (on ? '<button class="btn sm" type="button" disabled>' + (AD ? 'Added' : 'Tracking') + '</button>' : AD ? '<button class="btn primary sm" type="button" data-addcat="' + esc(f.key) + '">Add</button>' : '<button class="btn primary sm" type="button" data-track="' + esc(f.key) + '">Track</button>') + '</div></div>';
+  }
+  function liveHtml(q, AD) {
+    var m = /^\s*([A-Za-z0-9]{2})\s?(\d{1,4})\s*$/.exec(q); if (!m || !adbKey()) return null;
+    var lk = (m[1] + m[2]).toUpperCase() + '|' + searchDate, c = LIVE[lk];
+    if (!c) { liveFetch(lk); return '<div class="note">Searching live schedules&hellip;</div>'; }
+    if (c.busy) return '<div class="note">Searching live schedules&hellip;</div>';
+    if (c.err) { delete LIVE[lk]; return '<div class="card tight"><div class="t" style="font-weight:600">Could not search</div><div class="note">' + esc(c.err) + '</div></div>'; }
+    if (!c.list.length) return '<div class="card tight"><div class="t" style="font-weight:600">No flights found</div><div class="note">No schedule for ' + esc(lk.split('|')[0]) + ' on ' + df(L(searchDate + ' 12:00', MY_TZ), MY_TZ) + '. Check the number and date, or enter it manually.</div></div>' + (AD ? '<div class="btns"><button class="btn sm" type="button" data-go="add-manual">Enter details manually</button></div>' : '');
+    return c.list.map(function (f) { return liveCard(f, AD); }).join('');
+  }
   function addFlightView() {
     var h = head('Add flight', { close: true }), box;
     if (addMode === 'route') box = '<div class="rcols"><input id="rf" list="apts" placeholder="From (SYD)" value="' + esc(rFrom) + '" autocomplete="off" autocapitalize="characters" aria-label="From airport"><input id="rt" list="apts" placeholder="To (BNE)" value="' + esc(rTo) + '" autocomplete="off" autocapitalize="characters" aria-label="To airport"></div>';
@@ -931,8 +972,8 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
       '<p class="note">Schedules here are sample data. The real build searches live airline schedules.</p>';
   }
   function openAddSheet(key) {
-    var p = key.split('|'), e = CAT.filter(function (x) { return x[0] === p[1] && String(x[1]) === p[2]; })[0]; if (!e) return;
-    var f = mkFlight(e, p[3]), A = AP[f.from], B = AP[f.to], trips = []; S.flights.forEach(function (x) { if (trips.indexOf(x.trip) < 0) trips.push(x.trip); });
+    var p = key.split('|'), e = CAT.filter(function (x) { return x[0] === p[1] && String(x[1]) === p[2]; })[0]; if (!e && !LIVEF[key]) return;
+    var f = LIVEF[key] || mkFlight(e, p[3]), A = AP[f.from], B = AP[f.to], trips = []; S.flights.forEach(function (x) { if (trips.indexOf(x.trip) < 0) trips.push(x.trip); });
     var sh = document.getElementById('sheet'); detail = '__add';
     sh.innerHTML = '<div class="sheet-bar gut"><div class="sheet-top"><button class="btn sm" type="button" data-act="back">Cancel</button></div></div><div class="sheet-scroll gut"><div class="sheet-in"><form id="confirmForm" novalidate>' +
       '<div class="card"><span class="label">' + esc(f.airline) + ' &middot; ' + esc(f.no) + ' &middot; ' + dfy(f.dep, A.tz) + '</span><div class="rt" style="font-family:var(--f-display);font-weight:700;font-size:30px;line-height:1.1">' + f.from + ' to ' + f.to + '</div><div class="note" style="margin:4px 0 0">' + tf(f.dep, A.tz) + ' ' + A.n + ' &rarr; ' + tf(f.arr, B.tz) + ' ' + B.n + ' &middot; ' + dur(f.dep, f.arr) + '</div></div>' +
@@ -948,14 +989,15 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
       ev.preventDefault(); var fm = ev.target, v = function (n) { return (fm.elements[n].value || '').trim(); };
       var pax = Array.prototype.map.call(fm.querySelectorAll('input[name=pax]:checked'), function (x) { return x.value; });
       var nf = { id: 'f' + (S.nextId++), trip: v('trip') || (B.n + ' trip'), airline: f.airline, no: f.no, from: f.from, to: f.to, dep: f.dep, arr: f.arr, delay: 0, ref: v('ref').toUpperCase(), ticket: v('ticket'), seat: v('seat').toUpperCase(), terminal: '', gate: '', pax: pax, notes: '' };
-      S.flights.push(nf); save(); detail = null; sh.hidden = true; go('flights'); toast('Added to My Flights', nf.no + ' ' + nf.from + ' to ' + nf.to);
+      keepAps(nf); S.flights.push(nf); save(); detail = null; sh.hidden = true; go('flights'); toast('Added to My Flights', nf.no + ' ' + nf.from + ' to ' + nf.to);
     });
   }
+  function keepAps(f) { [f.from, f.to].forEach(function (c) { if (LIVEAP[c]) { S.airports = S.airports || {}; S.airports[c] = LIVEAP[c]; } }); }
   function trackFlight(key) {
-    var p = key.split('|'), e = CAT.filter(function (x) { return x[0] === p[1] && String(x[1]) === p[2]; })[0]; if (!e) return;
+    var p = key.split('|'), e = CAT.filter(function (x) { return x[0] === p[1] && String(x[1]) === p[2]; })[0]; if (!e && !LIVEF[key]) return;
     var ex = S.tracked.filter(function (t) { return t.key === key; })[0];
     if (ex) { liveSel = ex.id; go('live'); return; }
-    var f = mkFlight(e, p[3]); f.id = 'tr' + (S.nextId++);
+    var f = LIVEF[key] ? JSON.parse(JSON.stringify(LIVEF[key])) : mkFlight(e, p[3]); f.id = 'tr' + (S.nextId++); keepAps(f);
     S.tracked.push(f); liveSel = f.id; lsub = 'flights'; save(); go('live');
     toast('Tracking ' + f.no, f.from + ' to ' + f.to + '. You get alerts for delays and gate changes.');
   }
@@ -1129,7 +1171,8 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
       '<div class="card"><span class="label">Your data</span>' +
       gCard() +
       '<div class="row"><div><div class="t">Google Drive folder</div><div class="d">E-tickets and confirmation PDFs.</div></div><span class="pill idle">Not linked</span></div>' +
-      '<div class="row"><div><div class="t">Live flight status</div><div class="d">Delays and gates from a flight data service.</div></div><span class="pill warn">Simulated</span></div>' +
+      '<div class="row"><div><div class="t">Live flight data key</div><div class="d">' + (adbKey() ? 'Saved on this phone only. Flight search uses real schedules.' : 'Paste your AeroDataBox key to search real flights.') + '</div></div><span class="pill ' + (adbKey() ? 'ok' : 'warn') + '">' + (adbKey() ? 'Set' : 'Needed') + '</span></div>' +
+      '<div class="f" style="margin:4px 0 8px"><input id="adbkey" type="password" placeholder="Paste key here" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Flight data key"></div><div class="btns"><button class="btn primary sm" data-act="savekey">Save key</button>' + (adbKey() ? '<button class="btn sm" data-act="clearkey">Remove key</button>' : '') + '</div>' +
       '<div class="row"><div><div class="t">Weather</div><div class="d">Conditions at departure and arrival airports.</div></div><span class="pill warn">Simulated</span></div></div>' +
       '<div class="card"><span class="label">Prototype</span><div class="btns"><button class="btn sm" data-act="resetdemo">Reset sample data</button><button class="btn sm" data-act="clear">Clear all flights</button></div><p class="note" style="margin:0">Changes here stay in this browser only. Sheets, Drive and live tracking get connected in the real build.</p></div></section>';
   }
@@ -1267,6 +1310,8 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
     else if (act === 'readall') { S.alerts.forEach(function (a) { a.unread = false; }); save(); render(); }
     else if (act === 'gsignin' || act === 'gsync') gSync(true);
     else if (act === 'gsignout') gOut();
+    else if (act === 'savekey') { var kv = (document.getElementById('adbkey') || {}).value; kv = (kv || '').trim(); if (kv) { try { localStorage.setItem(ADBK, kv); } catch (x) {} LIVE = {}; render(); toast('Key saved', 'Flight search now uses real schedules.'); } }
+    else if (act === 'clearkey') { try { localStorage.removeItem(ADBK); } catch (x) {} LIVE = {}; render(); toast('Key removed'); }
     else if (act === 'resetdemo') { S = seed(); S.sample = !G.linked; save(); render(); toast('Sample data restored'); }
     else if (act === 'clear') { S.flights = []; S.alerts = []; save(); render(); toast('All flights cleared'); }
   });
