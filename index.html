@@ -59,7 +59,7 @@ h2 { font-family: var(--f-display); font-weight: 600; font-size: 20px; letter-sp
 .sechead { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
 
 /* Shell */
-.top { flex: none; border-bottom: 1px solid var(--line); background: var(--bg); padding-top: env(safe-area-inset-top, 0px); }
+.top { flex: none; border-bottom: 1px solid var(--line); background: var(--bg); padding-top: calc(14px + env(safe-area-inset-top, 0px)); }
 #top { max-width: 520px; margin: 0 auto; display: flex; flex-direction: column; gap: 10px; padding-block: 8px 10px; }
 .scroll { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; }
 .app { max-width: 520px; margin: 0 auto; padding-block: 12px 24px; display: flex; flex-direction: column; gap: 14px; }
@@ -179,7 +179,7 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
 
 /* Tab bar */
 .tabs { flex: none; background: var(--surface); border-top: 1px solid var(--line);
-  padding: 6px max(8px, env(safe-area-inset-right, 0px)) calc(6px + env(safe-area-inset-bottom, 0px)) max(8px, env(safe-area-inset-left, 0px)); }
+  padding: 6px max(8px, env(safe-area-inset-right, 0px)) calc(22px + env(safe-area-inset-bottom, 0px)) max(8px, env(safe-area-inset-left, 0px)); }
 .tabs-in { max-width: 520px; margin: 0 auto; display: grid; grid-template-columns: repeat(5, 1fr); align-items: stretch; }
 .tab { background: none; border: 0; display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 5px 2px; color: var(--muted); font-size: 10.5px; font-weight: 500; white-space: nowrap; min-width: 0; position: relative; }
 .tab svg { width: 22px; height: 22px; }
@@ -190,7 +190,7 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
 /* Floating add button, follows theme and theme colour */
 .fab { position: fixed; z-index: 15; width: 58px; height: 58px; border-radius: 50%; border: 3px solid transparent; display: grid; place-items: center; padding: 0; color: var(--ink);
   right: max(16px, calc((100vw - 520px) / 2 + 16px), env(safe-area-inset-right, 0px));
-  bottom: calc(76px + env(safe-area-inset-bottom, 0px));
+  bottom: calc(92px + env(safe-area-inset-bottom, 0px));
   background: radial-gradient(circle at 50% 35%, color-mix(in srgb, var(--accent) 26%, var(--surface)), var(--surface)) padding-box,
     conic-gradient(from 0deg, var(--accent), color-mix(in srgb, var(--accent) 45%, #fff), var(--accent), color-mix(in srgb, var(--accent) 55%, var(--ink)), color-mix(in srgb, var(--accent) 70%, #fff), var(--accent)) border-box;
   box-shadow: 0 0 24px color-mix(in srgb, var(--accent) 42%, transparent), 0 8px 20px rgba(3, 8, 24, .25);
@@ -310,7 +310,7 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
 .mapctl button + button { border-top: 1px solid rgba(255,255,255,.14); }
 .mapctl button[aria-pressed="true"] { color: var(--accent); }
 .mapctl svg { width: 20px; height: 20px; }
-.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(150px + env(safe-area-inset-bottom, 0px)); z-index: 40; background: var(--ink); color: var(--bg); border-radius: 12px; padding: 12px 16px; max-width: min(92vw, 460px); font-size: 14px; box-shadow: 0 8px 28px rgba(0,0,0,.28); }
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(166px + env(safe-area-inset-bottom, 0px)); z-index: 40; background: var(--ink); color: var(--bg); border-radius: 12px; padding: 12px 16px; max-width: min(92vw, 460px); font-size: 14px; box-shadow: 0 8px 28px rgba(0,0,0,.28); }
 .toast b { display: block; }
 .toast[hidden], .sheet[hidden], .fab[hidden] { display: none; }
 .note { font-size: 12px; color: var(--muted); }
