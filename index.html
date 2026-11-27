@@ -436,9 +436,9 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
   /* ---------- Google sign-in and Sheets sync ---------- */
   var G_ID = '760430665288-j9jlkhfm9ehjmnpc84m0lh6fqen9m2o6.apps.googleusercontent.com', G_SCOPE = 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.email', GK = 'wingman-google';
   var SH = 'https://sheets.googleapis.com/v4/spreadsheets/';
-  var G = { tok: '', exp: 0, sheet: '', email: '', linked: false, state: 'off', msg: '', busy: false, dirty: false, timer: 0, at: 0 };
-  try { var gs = JSON.parse(localStorage.getItem(GK) || 'null'); if (gs) { G.sheet = gs.sheet || ''; G.email = gs.email || ''; G.linked = true; } } catch (e) {}
-  function gStore() { try { localStorage.setItem(GK, JSON.stringify({ sheet: G.sheet, email: G.email })); } catch (e) {} }
+  var G = { tok: '', exp: 0, sheet: '', folder: '', moved: false, email: '', linked: false, state: 'off', msg: '', busy: false, dirty: false, timer: 0, at: 0 };
+  try { var gs = JSON.parse(localStorage.getItem(GK) || 'null'); if (gs) { G.sheet = gs.sheet || ''; G.folder = gs.folder || ''; G.moved = !!gs.moved; G.email = gs.email || ''; G.linked = true; } } catch (e) {}
+  function gStore() { try { localStorage.setItem(GK, JSON.stringify({ sheet: G.sheet, folder: G.folder, moved: G.moved, email: G.email })); } catch (e) {} }
   function gOk() { return G.tok && Date.now() < G.exp - 60000; }
   function gSet(state, msg) { G.state = state; G.msg = msg || ''; if (typeof view !== 'undefined' && view === 'settings' && !detail) render(); }
   function gToken(interactive) {
@@ -464,6 +464,30 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
     return gApi('https://www.googleapis.com/drive/v3/files?fields=files(id)&q=' + encodeURIComponent(q)).then(function (r) {
       if (r.files && r.files.length) return { id: r.files[0].id, created: false };
       return gApi(SH.slice(0, -1), gJson({ properties: { title: 'WingMan' }, sheets: ['Flights', 'Travellers', 'Passports', '_data'].map(function (t) { return { properties: { title: t } }; }) })).then(function (c) { return { id: c.spreadsheetId, created: true }; });
+    });
+  }
+  var DR = 'https://www.googleapis.com/drive/v3/files';
+  function gFolder() {
+    if (G.folder) return gApi(DR + '/' + G.folder + '?fields=id,trashed').then(function (x) { if (x.trashed) { G.folder = ''; G.moved = false; return gFolder(); } return G.folder; }, function (e) { if (/ 404 | 403 /.test(e.message)) { G.folder = ''; G.moved = false; return gFolder(); } throw e; });
+    var q = "name='WingMan' and mimeType='application/vnd.google-apps.folder' and trashed=false";
+    return gApi(DR + '?fields=files(id)&q=' + encodeURIComponent(q)).then(function (r) {
+      if (r.files && r.files.length) return r.files[0].id;
+      return gApi(DR + '?fields=id', gJson({ name: 'WingMan', mimeType: 'application/vnd.google-apps.folder' })).then(function (c) { return c.id; });
+    }).then(function (id) { G.folder = id; gStore(); return id; });
+  }
+  function gFolderSetup() {
+    return gFolder().then(function () {
+      if (G.moved || !G.sheet) return;
+      return gApi(DR + '/' + G.sheet + '?fields=parents').then(function (f) {
+        var ps = f.parents || [];
+        if (ps.indexOf(G.folder) < 0) return gApi(DR + '/' + G.sheet + '?addParents=' + G.folder + (ps.length ? '&removeParents=' + ps.join(',') : '') + '&fields=id', { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: '{}' });
+      }).then(function () { G.moved = true; gStore(); });
+    }).catch(function () {});
+  }
+  function gUpload(file) {
+    return gToken(true).then(gFolder).then(function (fid) {
+      var fd = new FormData(); fd.append('metadata', new Blob([JSON.stringify({ name: file.name, parents: [fid] })], { type: 'application/json' })); fd.append('file', file);
+      return gApi('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webViewLink', { method: 'POST', body: fd });
     });
   }
   function gRead() {
@@ -498,14 +522,17 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
       if (!G.email) return gApi('https://www.googleapis.com/oauth2/v3/userinfo').then(function (u) { G.email = u.email || ''; });
     }).then(gEnsure).then(function (sh) {
       G.sheet = sh.id; G.linked = true; gStore();
+      return gFolderSetup().then(function () { return gSyncData(sh); });
+    }).then(function () { G.busy = false; G.at = Date.now(); gSet('ok', ''); if (changed) render(); if (interactive) toast('Synced with Google', G.email); },
+      function (e) { G.busy = false; gSet('err', e.message || 'Sync failed'); if (interactive) toast('Sync problem', e.message || ''); });
+    function gSyncData(sh) {
       if (sh.created) { S = { flights: [], alerts: [], passports: [], travellers: [], tracked: [], nextId: 1, settings: S.settings, rev: Date.now() }; persist(); changed = true; return gWrite(); }
       return gRead().then(function (rm) {
         if (!rm) { S.sample = false; S.rev = Date.now(); persist(); return gWrite(); }
         if (S.sample || (rm.rev || 0) > (S.rev || 0)) { S = rm; gFix(); persist(); changed = true; }
         else if ((S.rev || 0) > (rm.rev || 0) || G.dirty) return gWrite();
       });
-    }).then(function () { G.busy = false; G.at = Date.now(); gSet('ok', ''); if (changed) render(); if (interactive) toast('Synced with Google', G.email); },
-      function (e) { G.busy = false; gSet('err', e.message || 'Sync failed'); if (interactive) toast('Sync problem', e.message || ''); });
+    }
   }
   function gQueue() {
     if (!G.linked) return; G.dirty = true; clearTimeout(G.timer);
@@ -513,7 +540,7 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
   }
   function gOut() {
     try { if (G.tok && window.google) google.accounts.oauth2.revoke(G.tok, function () {}); } catch (e) {}
-    G.tok = ''; G.exp = 0; G.sheet = ''; G.email = ''; G.linked = false; G.dirty = false; try { localStorage.removeItem(GK); } catch (e) {}
+    G.tok = ''; G.exp = 0; G.sheet = ''; G.folder = ''; G.moved = false; G.email = ''; G.linked = false; G.dirty = false; try { localStorage.removeItem(GK); } catch (e) {}
     gSet('off', ''); toast('Signed out', 'Your data stays on this phone.');
   }
   function gCard() {
@@ -734,7 +761,7 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
     return head('Traveller') + segTwo('Traveller sections', 'tsub', ['journey', 'My Journey'], ['passports', 'Passports'], tsub, att) + (tsub === 'passports' ? passportsBody() : journeyBody());
   }
 
-  /* ---------- live status and weather (simulated) ---------- */
+  /* ---------- live status (simulated) and weather (live forecast) ---------- */
   var WXG = { tropical: ['Partly cloudy', 'Showers', 'Thunderstorms', 'Cloudy'], dry: ['Clear', 'Partly cloudy', 'Haze', 'Clear'], mild: ['Partly cloudy', 'Cloudy', 'Showers', 'Clear'], cold: ['Cloudy', 'Showers', 'Clear', 'Fog'] };
   var WXB = { SYD: [25, 'mild'], MEL: [22, 'mild'], BNE: [28, 'tropical'], PER: [29, 'dry'], ADL: [26, 'dry'], CBR: [25, 'dry'], OOL: [27, 'tropical'], SIN: [30, 'tropical'], HYD: [29, 'dry'], BLR: [27, 'mild'], DEL: [24, 'dry'], MAA: [29, 'tropical'], BOM: [31, 'tropical'], DXB: [29, 'dry'], DOH: [27, 'dry'], KUL: [31, 'tropical'], BKK: [33, 'tropical'], HKG: [23, 'mild'], LHR: [8, 'cold'], LAX: [20, 'dry'], JFK: [6, 'cold'], AKL: [19, 'mild'] };
   var WXI = {
@@ -747,7 +774,26 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
     'Fog': '<path d="M4 8h16M4 12h16M6 16h12M9 20h6"/>'
   };
   function hsh(s) { var x = 0; for (var i = 0; i < s.length; i++) x = (x * 31 + s.charCodeAt(i)) >>> 0; return x; }
+  /* Live forecast from Open-Meteo (free, no key). Falls back to typical conditions when a forecast is not available. */
+  var WXL = {}, WXP = {};
+  function wmo(c) { return c === 0 ? 'Clear' : c <= 2 ? 'Partly cloudy' : c === 3 ? 'Cloudy' : c === 45 || c === 48 ? 'Fog' : c >= 95 ? 'Thunderstorms' : (c >= 51 && c <= 67) || (c >= 80 && c <= 82) ? 'Showers' : 'Cloudy'; }
+  function wxFetch(code) {
+    var a = AP[code]; if (!a || !a.la || !a.lo || WXP[code]) return;
+    var d = WXL[code]; if (d && Date.now() - d.at < 3600000) return;
+    WXP[code] = 1;
+    fetch('https://api.open-meteo.com/v1/forecast?latitude=' + a.la + '&longitude=' + a.lo + '&hourly=temperature_2m,relative_humidity_2m,weather_code,visibility,wind_speed_10m&wind_speed_unit=kmh&timeformat=unixtime&timezone=GMT&past_days=1&forecast_days=16')
+      .then(function (x) { if (!x.ok) throw 0; return x.json(); })
+      .then(function (j) { var h = j.hourly; if (h && h.time && h.time.length) WXL[code] = { at: Date.now(), h: h }; }, function () { WXL[code] = { at: Date.now(), h: null }; })
+      .then(function () { WXP[code] = 0; if (view === 'live') render(); });
+  }
+  function wxLive(code, ts) {
+    var d = WXL[code]; if (!d || !d.h) return null;
+    var h = d.h, i = Math.round((ts / 1000 - h.time[0]) / 3600); if (i < 0 || i >= h.time.length || h.temperature_2m[i] == null) return null;
+    var c = wmo(h.weather_code[i]), vis = h.visibility[i] == null ? 10 : Math.min(10, Math.round(h.visibility[i] / 100) / 10);
+    return { t: Math.round(h.temperature_2m[i]), c: c, w: Math.round(h.wind_speed_10m[i] || 0), hu: Math.round(h.relative_humidity_2m[i] || 0), v: vis, live: true };
+  }
   function wx(code, ts) {
+    wxFetch(code); var lv = wxLive(code, ts); if (lv) return lv;
     var b = WXB[code] || [24, 'mild'], hr = +tf(ts, AP[code].tz).slice(0, 2), h = hsh(code + Math.floor(ts / 10800000)), g = WXG[b[1]], cond = g[h % g.length];
     return { t: Math.round(b[0] + 4 * Math.sin(2 * Math.PI * (hr - 9) / 24) + (h % 5) - 2), c: cond, w: 8 + (h >>> 3) % 24, hu: b[1] === 'tropical' ? 70 + h % 20 : 40 + h % 30, v: cond === 'Fog' ? 1.5 : cond === 'Haze' ? 6 : cond === 'Thunderstorms' ? 7 : cond === 'Showers' ? 8 : 10 };
   }
@@ -760,6 +806,7 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
   function wxCard(code, ts, label) {
     var x = wx(code, ts), r = wxRisk(x);
     return '<div class="card tight"><div class="sechead"><span class="label">' + AP[code].n + ' &middot; ' + code + '</span><span class="label">' + label + '</span></div>' +
+      '<div class="note" style="margin:-2px 0 6px">' + (x.live ? 'Live forecast' : (WXP[code] ? 'Loading forecast&hellip;' : 'Typical conditions (forecast not available for this date)')) + '</div>' +
       '<div class="wx"><span class="wxi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + WXI[x.c] + '</svg></span><div class="temp">' + x.t + '&deg;C</div>' +
       '<div class="wxc"><div>' + x.c + '</div><div class="wxm"><span>Wind <b>' + x.w + ' km/h</b></span><span>Humidity <b>' + x.hu + '%</b></span><span>Visibility <b>' + x.v + ' km</b></span></div></div></div>' +
       '<span class="pill ' + r[0] + '" style="align-self:flex-start">' + r[1] + '</span></div>';
@@ -787,7 +834,7 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
     var h = wxCard(f.from, n < d ? d : n, n < d ? 'At departure ' + tf(d, a.tz) : 'Now');
     if (nx) h += wxCard(f.to, ar, 'Connection, lands ' + tf(ar, b.tz));
     else h += wxCard(f.to, ar, 'At arrival ' + tf(ar, b.tz));
-    return h + '<p class="note">Weather is simulated. The real build reads forecasts for the hour you depart and land, and adds a delay alert when storms or fog are expected.</p>';
+    return h + '<p class="note">Forecast from Open-Meteo for the hour you depart and land. Forecasts cover about 16 days ahead; later dates show typical conditions.</p>';
   }
   function liveView() {
     var up = liveList(), h = head('Live Status');
@@ -1141,7 +1188,7 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
       '<div class="f full"><label for="trip">Add to trip</label><select id="trip" name="trip">' + trips.map(function (t) { return '<option value="' + esc(t) + '">' + esc(t) + '</option>'; }).join('') + '<option value="__new">New trip...</option></select></div>' +
       '<div class="f full" id="newTripBox" hidden><label for="newTrip">New trip name</label><input id="newTrip" name="newTrip" placeholder="Melbourne work trip" autocomplete="off"></div>' +
       '<div class="f full"><label for="notes">Notes</label><textarea id="notes" name="notes" placeholder="Baggage allowance, frequent flyer number, pickup details"></textarea></div>' +
-      '<div class="f full"><label>Documents</label><div class="note">E-tickets and confirmation emails will be saved to a Google Drive folder. The attach button arrives in the real build.</div></div></fieldset>';
+      '<div class="f full"><label>Documents</label><div class="note">After adding the flight, open it and use Attach file to save the e-ticket to your Google Drive.</div></div></fieldset>';
     return h + '<div class="err" id="formErr" role="alert"></div><div class="btns"><button class="btn primary" type="submit">Save flight</button><button class="btn" type="button" data-go="prev">Cancel</button></div></form></section>';
   }
   function addPassportView() {
@@ -1174,10 +1221,10 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
       setRow('boarding', 'Boarding reminder', '40 minutes before departure.') + '</div>' +
       '<div class="card"><span class="label">Your data</span>' +
       gCard() +
-      '<div class="row"><div><div class="t">Google Drive folder</div><div class="d">E-tickets and confirmation PDFs.</div></div><span class="pill idle">Not linked</span></div>' +
+      '<div class="row"><div><div class="t">Google Drive folder</div><div class="d">' + (G.folder ? '<a href="https://drive.google.com/drive/folders/' + esc(G.folder) + '" target="_blank" rel="noopener">Open your WingMan folder</a><br>E-tickets and confirmations you attach are saved here.' : 'Created in your Drive when you sign in. Holds your sheet and attached e-tickets.') + '</div></div><span class="pill ' + (G.folder ? 'ok' : 'idle') + '">' + (G.folder ? 'Linked' : 'Not linked') + '</span></div>' +
       '<div class="row"><div><div class="t">Live flight data key</div><div class="d">' + (adbKey() ? 'Saved on this phone only. Flight search uses real schedules.' : 'Paste your AeroDataBox key to search real flights.') + '</div></div><span class="pill ' + (adbKey() ? 'ok' : 'warn') + '">' + (adbKey() ? 'Set' : 'Needed') + '</span></div>' +
       '<div class="f" style="margin:4px 0 8px"><input id="adbkey" type="password" placeholder="Paste key here" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Flight data key"></div><div class="btns"><button class="btn primary sm" data-act="savekey">Save key</button>' + (adbKey() ? '<button class="btn sm" data-act="clearkey">Remove key</button>' : '') + '</div>' +
-      '<div class="row"><div><div class="t">Weather</div><div class="d">Conditions at departure and arrival airports.</div></div><span class="pill warn">Simulated</span></div></div>' +
+      '<div class="row"><div><div class="t">Weather</div><div class="d">Live forecast for departure and arrival airports from Open-Meteo.</div></div><span class="pill ok">Live</span></div></div>' +
       '</section>';
   }
 
@@ -1213,13 +1260,33 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
       '<dt>Trip</dt><dd>' + esc(f.trip) + '</dd>' +
       '<dt>Local time here</dt><dd class="mono">' + tf(d, MY_TZ) + ' ' + df(d, MY_TZ) + '</dd></dl></div>' +
       (f.notes ? '<div class="card"><span class="label">Notes</span><div style="overflow-wrap:anywhere">' + esc(f.notes) + '</div></div>' : '') +
-      '<div class="card"><span class="label">Documents</span><div class="row"><div><div class="t">E-ticket.pdf</div><div class="d">Sample file. Stored in your Drive in the real build.</div></div><span class="pill idle">Sample</span></div></div>' +
+      docsCard(f) +
       '<div class="btns"><button class="btn danger" data-del="' + f.id + '">' + (f.tracked ? 'Stop tracking' : 'Delete flight') + '</button></div></div></div>';
+  }
+  function docsCard(f) {
+    if (f.tracked) return '';
+    var fl = f.files || [], h = '<div class="card"><span class="label">Documents</span>';
+    fl.forEach(function (x) { h += '<div class="row"><div><div class="t"><a href="' + esc(x.link) + '" target="_blank" rel="noopener">' + esc(x.name) + '</a></div><div class="d">In your WingMan Drive folder</div></div><button class="btn sm" type="button" data-fdel="' + esc(x.id) + '">Remove</button></div>'; });
+    if (!fl.length) h += '<div class="note" style="margin:0 0 8px">Attach the e-ticket or confirmation PDF. It is saved in your Google Drive.</div>';
+    h += G.linked ? '<label class="btn sm" style="display:inline-flex;cursor:pointer;margin-top:6px">Attach file<input id="fileIn" type="file" accept="application/pdf,image/*" hidden></label><span id="fileMsg" class="note" style="margin-left:8px"></span>' : '<div class="note" style="margin:0">Sign in with Google in Settings to attach files.</div>';
+    return h + '</div>';
+  }
+  function bindDocs(id) {
+    var inp = document.getElementById('fileIn'); if (!inp) return;
+    inp.addEventListener('change', function () {
+      var file = inp.files && inp.files[0]; if (!file) return;
+      var m = document.getElementById('fileMsg'); if (file.size > 15 * 1024 * 1024) { m.textContent = 'File is over 15 MB.'; return; }
+      m.textContent = 'Uploading...';
+      gUpload(file).then(function (x) {
+        var f = findFlight(id); if (!f) return; f.files = (f.files || []).concat([{ id: x.id, name: x.name, link: x.webViewLink || ('https://drive.google.com/file/d/' + x.id + '/view') }]);
+        save(); openDetail(id); toast('File attached', x.name);
+      }, function (e) { m.textContent = e.message || 'Upload failed.'; });
+    });
   }
   function openDetail(id) {
     var f = findFlight(id); if (!f) return;
     detail = id; var sh = document.getElementById('sheet'); sh.innerHTML = detailHtml(f); sh.hidden = false;
-    sh.querySelector('.sheet-scroll').scrollTop = 0; tick();
+    sh.querySelector('.sheet-scroll').scrollTop = 0; tick(); bindDocs(id);
   }
   function closeDetail() { detail = null; document.getElementById('sheet').hidden = true; render(); }
 
@@ -1263,7 +1330,7 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
 
   /* ---------- actions ---------- */
   document.addEventListener('click', function (e) {
-    var el = e.target.closest('[data-go],[data-open],[data-act],[data-sim],[data-del],[data-copy],[data-fab],[data-reveal],[data-pdel],[data-tsub],[data-lsub],[data-live],[data-lview],[data-mapwx],[data-track],[data-untrack],[data-save],[data-hint],[data-sdate],[data-addfor],[data-addpax],[data-addcat],[data-addmode]');
+    var el = e.target.closest('[data-go],[data-open],[data-act],[data-sim],[data-del],[data-copy],[data-fab],[data-reveal],[data-pdel],[data-tsub],[data-lsub],[data-live],[data-lview],[data-mapwx],[data-track],[data-untrack],[data-save],[data-hint],[data-sdate],[data-addfor],[data-addpax],[data-addcat],[data-addmode],[data-fdel]');
     if (!el) return;
     if (el.hasAttribute('data-fab')) { addWho = ''; if (fabTarget() === 'add') { addMode = ''; searchQ = ''; rFrom = ''; rTo = ''; } go(fabTarget()); return; }
     if (el.hasAttribute('data-mapwx')) { mapWx = !mapWx; render(); return; }
@@ -1271,6 +1338,7 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
     if (el.hasAttribute('data-track')) { trackFlight(el.getAttribute('data-track')); return; }
     if (el.hasAttribute('data-untrack')) { var uid = el.getAttribute('data-untrack'); S.tracked = S.tracked.filter(function (x) { return x.id !== uid; }); S.alerts = S.alerts.filter(function (x) { return x.fid !== uid; }); save(); liveSel = null; render(); toast('Stopped tracking'); return; }
     if (el.hasAttribute('data-save')) { saveTracked(el.getAttribute('data-save')); return; }
+    if (el.hasAttribute('data-fdel')) { var ff = findFlight(detail); if (ff) { ff.files = (ff.files || []).filter(function (x) { return x.id !== el.getAttribute('data-fdel'); }); save(); openDetail(detail); toast('Removed from the flight', 'The file stays in your Drive.'); } return; }
     if (el.hasAttribute('data-addcat')) { openAddSheet(el.getAttribute('data-addcat')); return; }
     if (el.hasAttribute('data-addmode')) { addMode = el.getAttribute('data-addmode'); rFrom = ''; rTo = ''; if (!addMode) searchQ = ''; render(); return; }
     if (el.hasAttribute('data-hint')) { searchQ = el.getAttribute('data-hint'); render(); return; }
