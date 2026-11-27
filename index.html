@@ -7,6 +7,7 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="WingMan">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="apple-touch-icon" href="icons/icon-180.png">
 <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
@@ -403,14 +404,107 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
       { id: 'p3', holder: 'Family member 2', country: 'AU', num: 'PA0000003', issued: ymd(-400), exp: ymd(1400), notes: 'Sample entry' }
     ];
     var travellers = [{ id: 't1', name: 'Surendra Madala', rel: 'Me' }, { id: 't2', name: 'Family member 1', rel: 'Family' }, { id: 't3', name: 'Family member 2', rel: 'Family' }];
-    return { flights: flights, alerts: alerts, passports: passports, travellers: travellers, tracked: [], nextId: 40, settings: { push: true, checkin: true, leave: true, delay: true, gate: true, boarding: true, checkinHrs: 24, leaveMins: 150 } };
+    return { sample: true, flights: flights, alerts: alerts, passports: passports, travellers: travellers, tracked: [], nextId: 40, settings: { push: true, checkin: true, leave: true, delay: true, gate: true, boarding: true, checkinHrs: 24, leaveMins: 150 } };
   }
   var S;
   try { S = JSON.parse(localStorage.getItem(KEY)); } catch (e) { S = null; }
   if (!S || !S.flights || !S.passports) S = seed();
   if (!S.tracked) S.tracked = [];
   if (!S.travellers) { S.travellers = []; S.passports.forEach(function (p) { if (!S.travellers.some(function (t) { return t.name === p.holder; })) S.travellers.push({ id: 't' + S.travellers.length, name: p.holder, rel: '' }); }); }
-  function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
+  function persist() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
+  function save() { S.rev = Date.now(); persist(); gQueue(); }
+
+  /* ---------- Google sign-in and Sheets sync ---------- */
+  var G_ID = '760430665288-j9jlkhfm9ehjmnpc84m0lh6fqen9m2o6.apps.googleusercontent.com', G_SCOPE = 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.email', GK = 'wingman-google';
+  var SH = 'https://sheets.googleapis.com/v4/spreadsheets/';
+  var G = { tok: '', exp: 0, sheet: '', email: '', linked: false, state: 'off', msg: '', busy: false, dirty: false, timer: 0, at: 0 };
+  try { var gs = JSON.parse(localStorage.getItem(GK) || 'null'); if (gs) { G.sheet = gs.sheet || ''; G.email = gs.email || ''; G.linked = true; } } catch (e) {}
+  function gStore() { try { localStorage.setItem(GK, JSON.stringify({ sheet: G.sheet, email: G.email })); } catch (e) {} }
+  function gOk() { return G.tok && Date.now() < G.exp - 60000; }
+  function gSet(state, msg) { G.state = state; G.msg = msg || ''; if (typeof view !== 'undefined' && view === 'settings' && !detail) render(); }
+  function gToken(interactive) {
+    return new Promise(function (res, rej) {
+      if (gOk()) return res(G.tok);
+      if (!window.google || !google.accounts) return rej(new Error('Google sign-in is still loading. Try again in a moment.'));
+      var tc = google.accounts.oauth2.initTokenClient({ client_id: G_ID, scope: G_SCOPE, hint: G.email || undefined,
+        callback: function (x) { if (x.error) return rej(new Error('Sign-in was not completed.')); G.tok = x.access_token; G.exp = Date.now() + (x.expires_in || 3600) * 1000; res(G.tok); },
+        error_callback: function (er) { rej(new Error(er && er.type === 'popup_closed' ? 'Sign-in was closed.' : 'Tap Sync now to sign in again.')); } });
+      tc.requestAccessToken({ prompt: interactive && !G.linked ? 'select_account' : '' });
+    });
+  }
+  function gApi(url, opt) {
+    return gToken(false).then(function (t) {
+      opt = opt || {}; opt.headers = Object.assign({ Authorization: 'Bearer ' + t }, opt.headers || {});
+      return fetch(url, opt);
+    }).then(function (x) { if (!x.ok) return x.text().then(function (b) { throw new Error('Google error ' + x.status + ' ' + b.slice(0, 100)); }); return x.json(); });
+  }
+  function gJson(body) { return { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) }; }
+  function gEnsure() {
+    if (G.sheet) return gApi(SH + G.sheet + '?fields=spreadsheetId').then(function () { return { id: G.sheet, created: false }; }, function (e) { if (/ 404 | 403 /.test(e.message)) { G.sheet = ''; return gEnsure(); } throw e; });
+    var q = "name='WingMan' and mimeType='application/vnd.google-apps.spreadsheet' and trashed=false";
+    return gApi('https://www.googleapis.com/drive/v3/files?fields=files(id)&q=' + encodeURIComponent(q)).then(function (r) {
+      if (r.files && r.files.length) return { id: r.files[0].id, created: false };
+      return gApi(SH.slice(0, -1), gJson({ properties: { title: 'WingMan' }, sheets: ['Flights', 'Travellers', 'Passports', '_data'].map(function (t) { return { properties: { title: t } }; }) })).then(function (c) { return { id: c.spreadsheetId, created: true }; });
+    });
+  }
+  function gRead() {
+    return gApi(SH + G.sheet + '/values/' + encodeURIComponent('_data!A1:A400')).then(function (r) {
+      var v = (r.values || []).map(function (x) { return x[0] || ''; }).join('');
+      if (!v) return null; try { return JSON.parse(v); } catch (e) { return null; }
+    });
+  }
+  function gWrite() {
+    var fl = [['Trip', 'Airline', 'Flight', 'From', 'To', 'Departs', 'Arrives', 'Booking ref', 'Ticket', 'Seat', 'Terminal', 'Gate', 'Delay (min)', 'Passengers', 'Notes']];
+    S.flights.forEach(function (f) {
+      var a = AP[f.from], b = AP[f.to];
+      fl.push([f.trip || '', f.airline || '', f.no || '', f.from, f.to, a ? df(f.dep, a.tz) + ' ' + tf(f.dep, a.tz) : '', b ? df(f.arr, b.tz) + ' ' + tf(f.arr, b.tz) : '', f.ref || '', f.ticket || '', f.seat || '', f.terminal || '', f.gate || '', f.delay || 0, (f.pax || []).join(', '), f.notes || '']);
+    });
+    var tr = [['Name', 'Relationship']].concat(S.travellers.map(function (t) { return [t.name, t.rel || '']; }));
+    var pp = [['Holder', 'Country', 'Passport number', 'Issued', 'Expires', 'Notes']].concat(S.passports.map(function (x) { return [x.holder, x.country || '', x.num || '', x.issued || '', x.exp || '', x.notes || '']; }));
+    var js = JSON.stringify(S), ch = []; for (var i = 0; i < js.length; i += 30000) ch.push([js.slice(i, i + 30000)]);
+    var data = [{ range: 'Flights!A1', values: fl }, { range: 'Travellers!A1', values: tr }, { range: 'Passports!A1', values: pp }, { range: '_data!A1', values: ch }];
+    return gApi(SH + G.sheet + '/values:batchClear', gJson({ ranges: ['Flights', 'Travellers', 'Passports', '_data'] })).then(function () {
+      return gApi(SH + G.sheet + '/values:batchUpdate', gJson({ valueInputOption: 'RAW', data: data }));
+    }).then(function () { G.dirty = false; });
+  }
+  function gFix() {
+    if (!S.tracked) S.tracked = []; if (!S.travellers) S.travellers = []; if (!S.alerts) S.alerts = []; if (!S.flights) S.flights = []; if (!S.passports) S.passports = [];
+    if (!S.settings) S.settings = { push: true, checkin: true, leave: true, delay: true, gate: true, boarding: true, checkinHrs: 24, leaveMins: 150 };
+  }
+  function gSync(interactive) {
+    if (G.busy) return Promise.resolve();
+    G.busy = true; gSet('busy', 'Syncing...');
+    var changed = false;
+    return gToken(interactive).then(function () {
+      if (!G.email) return gApi('https://www.googleapis.com/oauth2/v3/userinfo').then(function (u) { G.email = u.email || ''; });
+    }).then(gEnsure).then(function (sh) {
+      G.sheet = sh.id; G.linked = true; gStore();
+      if (sh.created) { S = { flights: [], alerts: [], passports: [], travellers: [], tracked: [], nextId: 1, settings: S.settings, rev: Date.now() }; persist(); changed = true; return gWrite(); }
+      return gRead().then(function (rm) {
+        if (!rm) { S.sample = false; S.rev = Date.now(); persist(); return gWrite(); }
+        if (S.sample || (rm.rev || 0) > (S.rev || 0)) { S = rm; gFix(); persist(); changed = true; }
+        else if ((S.rev || 0) > (rm.rev || 0) || G.dirty) return gWrite();
+      });
+    }).then(function () { G.busy = false; G.at = Date.now(); gSet('ok', ''); if (changed) render(); if (interactive) toast('Synced with Google', G.email); },
+      function (e) { G.busy = false; gSet('err', e.message || 'Sync failed'); if (interactive) toast('Sync problem', e.message || ''); });
+  }
+  function gQueue() {
+    if (!G.linked) return; G.dirty = true; clearTimeout(G.timer);
+    G.timer = setTimeout(function () { if (gOk()) gSync(false); else gSet('err', 'Tap Sync now to save your changes to Google.'); }, 2500);
+  }
+  function gOut() {
+    try { if (G.tok && window.google) google.accounts.oauth2.revoke(G.tok, function () {}); } catch (e) {}
+    G.tok = ''; G.exp = 0; G.sheet = ''; G.email = ''; G.linked = false; G.dirty = false; try { localStorage.removeItem(GK); } catch (e) {}
+    gSet('off', ''); toast('Signed out', 'Your data stays on this phone.');
+  }
+  function gCard() {
+    var pill = G.state === 'busy' ? '<span class="pill idle">Syncing</span>' : G.state === 'err' && G.linked ? '<span class="pill warn">Reconnect</span>' : G.linked && gOk() ? '<span class="pill ok">Linked</span>' : G.linked ? '<span class="pill idle">Signed out</span>' : '<span class="pill idle">Not linked</span>';
+    var d = G.linked ? (esc(G.email) || 'Linked') + (G.msg ? '<br>' + esc(G.msg) : G.at ? '<br>Last synced ' + tf(G.at, MY_TZ) : '') : (G.msg ? esc(G.msg) : 'Sign in to save your flights and passports to your own Google Drive.');
+    var b = G.linked ? '<button class="btn primary sm" data-act="gsync">Sync now</button><button class="btn sm" data-act="gsignout">Sign out</button>' : '<button class="btn primary sm" data-act="gsignin">Sign in with Google</button>';
+    return '<div class="row"><div><div class="t">Google account</div><div class="d">' + d + '</div></div>' + pill + '</div><div class="btns">' + b + '</div>' +
+      '<div class="row"><div><div class="t">Google Sheets</div><div class="d">' + (G.sheet ? '<a href="https://docs.google.com/spreadsheets/d/' + esc(G.sheet) + '" target="_blank" rel="noopener">Open your WingMan sheet</a>' : 'Created in your Drive when you sign in.') + '</div></div>' + (G.sheet ? '<span class="pill ok">Saved</span>' : '<span class="pill idle">Not linked</span>') + '</div>';
+  }
+
 
   /* ---------- derived: flights ---------- */
   function effDep(f) { return f.dep + f.delay * 60000; }
@@ -968,12 +1062,15 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
       setRow('leave', 'Time to leave for the airport', 'Allows ' + st.leaveMins + ' min domestic, plus 90 min international.') +
       setRow('boarding', 'Boarding reminder', '40 minutes before departure.') + '</div>' +
       '<div class="card"><span class="label">Your data</span>' +
-      '<div class="row"><div><div class="t">Google Sheets</div><div class="d">Flights, passports and alerts saved to one sheet in your Drive.</div></div><span class="pill idle">Not linked</span></div>' +
+      gCard() +
       '<div class="row"><div><div class="t">Google Drive folder</div><div class="d">E-tickets and confirmation PDFs.</div></div><span class="pill idle">Not linked</span></div>' +
       '<div class="row"><div><div class="t">Live flight status</div><div class="d">Delays and gates from a flight data service.</div></div><span class="pill warn">Simulated</span></div>' +
       '<div class="row"><div><div class="t">Weather</div><div class="d">Conditions at departure and arrival airports.</div></div><span class="pill warn">Simulated</span></div></div>' +
       '<div class="card"><span class="label">Prototype</span><div class="btns"><button class="btn sm" data-act="resetdemo">Reset sample data</button><button class="btn sm" data-act="clear">Clear all flights</button></div><p class="note" style="margin:0">Changes here stay in this browser only. Sheets, Drive and live tracking get connected in the real build.</p></div></section>';
   }
+
+  window.addEventListener('load', function () { if (G.linked) setTimeout(function () { gSync(false); }, 1500); });
+  document.addEventListener('visibilitychange', function () { if (!document.hidden && G.linked && gOk() && Date.now() - G.at > 60000) gSync(false); });
 
   /* ---------- flight detail ---------- */
   function detailHtml(f) {
@@ -1101,7 +1198,9 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
     if (act === 'back') closeDetail();
     else if (act === 'refresh') { lastChecked = Date.now(); render(); toast('Status updated', 'Checked just now. Simulated feed.'); }
     else if (act === 'readall') { S.alerts.forEach(function (a) { a.unread = false; }); save(); render(); }
-    else if (act === 'resetdemo') { S = seed(); save(); render(); toast('Sample data restored'); }
+    else if (act === 'gsignin' || act === 'gsync') gSync(true);
+    else if (act === 'gsignout') gOut();
+    else if (act === 'resetdemo') { S = seed(); S.sample = !G.linked; save(); render(); toast('Sample data restored'); }
     else if (act === 'clear') { S.flights = []; S.alerts = []; save(); render(); toast('All flights cleared'); }
   });
   document.addEventListener('change', function (e) {
