@@ -1314,6 +1314,18 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
   render();
 })();
 </script>
+<script>
+/* iPhone home-screen app: the layout viewport can end above the home indicator, so size the shell to the real screen. */
+(function () {
+  var sa = window.navigator.standalone === true || (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+  function fit() {
+    if (!sa) return;
+    var por = window.innerHeight >= window.innerWidth, h = por ? Math.max(screen.width, screen.height) : Math.min(screen.width, screen.height);
+    document.body.style.bottom = 'auto'; document.body.style.height = h + 'px';
+  }
+  fit(); window.addEventListener('resize', fit); window.addEventListener('orientationchange', function () { setTimeout(fit, 250); });
+})();
+</script>
 <script>if("serviceWorker" in navigator){window.addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){});});}</script>
 </body>
 </html>
