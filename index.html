@@ -1666,7 +1666,8 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
       '<dt>Ticket number</dt><dd class="mono' + ((f.ticket || '').length > 18 ? ' long' : '') + '">' + esc(f.ticket || '-') + '</dd>' +
       '<dt>Passengers</dt><dd' + ((f.pax || []).join(', ').length > 22 ? ' class="long"' : '') + '>' + esc((f.pax || []).join(', ') || '-') + '</dd>' +
       '<dt>Trip</dt><dd' + ((f.trip || '').length > 22 ? ' class="long"' : '') + '>' + esc(f.trip) + '</dd>' +
-      '<dt>Local time here</dt><dd class="mono nowrap">' + tf(d, MY_TZ) + ' ' + df(d, MY_TZ) + '</dd></dl></div>' +
+      '<dt>Local time here</dt><dd class="mono nowrap">' + tf(d, MY_TZ) + ' ' + df(d, MY_TZ) + '</dd></dl>' +
+      (f.tracked ? '<div class="note" style="margin:10px 0 8px">This flight is only being tracked. Add it to My Flights to save your booking reference, ticket number, seat and passengers.</div><button class="btn sm" type="button" data-addcat="' + esc(f.key || f.id) + '">Add to My Flights</button>' : '<button class="btn sm" type="button" data-bedit="' + esc(f.id) + '" style="margin-top:10px">Edit booking details</button>') + '</div>' +
       (f.notes ? '<div class="card"><span class="label">Notes</span><div style="overflow-wrap:anywhere">' + esc(f.notes) + '</div></div>' : '') +
       docsCard(f) +
       '<div class="btns"><button class="btn danger" data-del="' + f.id + '">' + (f.tracked ? 'Stop tracking' : 'Delete flight') + '</button></div></div></div>';
@@ -1689,6 +1690,26 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
         var f = findFlight(id); if (!f) return; f.files = (f.files || []).concat([{ id: x.id, name: x.name, link: x.webViewLink || ('https://drive.google.com/file/d/' + x.id + '/view') }]);
         save(); openDetail(id); toast('File attached', x.name);
       }, function (e) { m.textContent = e.message || 'Upload failed.'; });
+    });
+  }
+  function openBookingEdit(id) {
+    var f = findFlight(id); if (!f || f.tracked) return;
+    var sh = document.getElementById('sheet'); detail = id;
+    sh.innerHTML = '<div class="sheet-bar gut"><div class="sheet-top"><button class="btn sm" type="button" data-act="back">Cancel</button></div></div><div class="sheet-scroll gut"><div class="sheet-in"><form id="beForm" novalidate><fieldset><legend>Booking details &middot; ' + esc(f.no) + ' ' + f.from + ' to ' + f.to + '</legend>' +
+      '<div class="f"><label for="ref">Booking reference</label><input id="ref" name="ref" class="caps" value="' + esc(f.ref || '') + '" placeholder="K4M7QP" autocomplete="off"></div>' +
+      '<div class="f"><label for="seat">Seat</label><input id="seat" name="seat" class="caps" value="' + esc(f.seat || '') + '" placeholder="23A" autocomplete="off"></div>' +
+      '<div class="f full"><label for="ticket">Ticket number</label><input id="ticket" name="ticket" value="' + esc(f.ticket || '') + '" placeholder="081 2294 117 650" autocomplete="off"></div>' +
+      '<div class="f full"><label for="trip">Trip name</label><input id="trip" name="trip" value="' + esc(f.trip || '') + '" autocomplete="off"></div>' +
+      '<div class="f full"><label for="pax">Passengers (comma separated)</label><input id="pax" name="pax" value="' + esc((f.pax || []).join(', ')) + '" autocomplete="off"></div>' +
+      '<div class="f full"><div class="hints">' + S.travellers.map(function (t) { return '<button type="button" class="hint" data-addpax="' + esc(t.name) + '">+ ' + esc(t.name) + '</button>'; }).join('') + '</div></div>' +
+      '<div class="f full"><label for="notes">Notes</label><input id="notes" name="notes" value="' + esc(f.notes || '') + '" autocomplete="off"></div></fieldset>' +
+      '<div class="btns"><button class="btn primary" type="submit">Save</button></div></form></div></div>';
+    sh.hidden = false;
+    sh.querySelector('#beForm').addEventListener('submit', function (ev) {
+      ev.preventDefault(); var fm = ev.target, v = function (n) { return (fm.elements[n].value || '').trim(); };
+      f.ref = v('ref').toUpperCase(); f.seat = v('seat').toUpperCase(); f.ticket = v('ticket'); f.trip = v('trip') || f.trip;
+      f.pax = v('pax').split(',').map(function (x) { return x.trim(); }).filter(Boolean); f.notes = v('notes');
+      save(); openDetail(id); toast('Booking saved', f.no + ' ' + f.from + ' to ' + f.to);
     });
   }
   function openDetail(id) {
@@ -1747,7 +1768,7 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
 
   /* ---------- actions ---------- */
   document.addEventListener('click', function (e) {
-    var el = e.target.closest('[data-go],[data-open],[data-act],[data-del],[data-copy],[data-fab],[data-reveal],[data-ppen],[data-ppedit],[data-pdel],[data-tsub],[data-lsub],[data-live],[data-lview],[data-mapwx],[data-track],[data-untrack],[data-save],[data-hint],[data-sdate],[data-addfor],[data-addpax],[data-addcat],[data-addmode],[data-fdel]');
+    var el = e.target.closest('[data-go],[data-open],[data-act],[data-del],[data-copy],[data-fab],[data-reveal],[data-bedit],[data-ppen],[data-ppedit],[data-pdel],[data-tsub],[data-lsub],[data-live],[data-lview],[data-mapwx],[data-track],[data-untrack],[data-save],[data-hint],[data-sdate],[data-addfor],[data-addpax],[data-addcat],[data-addmode],[data-fdel]');
     if (!el) return;
     if (el.hasAttribute('data-fab')) { addWho = ''; if (fabTarget() === 'add') { addMode = ''; searchQ = ''; rFrom = ''; rTo = ''; } go(fabTarget()); return; }
     if (el.hasAttribute('data-mapwx')) { mapWx = !mapWx; render(); return; }
@@ -1756,6 +1777,7 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
     if (el.hasAttribute('data-untrack')) { var uid = el.getAttribute('data-untrack'); S.tracked = S.tracked.filter(function (x) { return x.id !== uid; }); S.alerts = S.alerts.filter(function (x) { return x.fid !== uid; }); save(); liveSel = null; render(); toast('Stopped tracking'); return; }
     if (el.hasAttribute('data-save')) { saveTracked(el.getAttribute('data-save')); return; }
     if (el.hasAttribute('data-fdel')) { var ff = findFlight(detail); if (ff) { ff.files = (ff.files || []).filter(function (x) { return x.id !== el.getAttribute('data-fdel'); }); save(); openDetail(detail); toast('Removed from the flight', 'The file stays in your Drive.'); } return; }
+    if (el.hasAttribute('data-bedit')) { openBookingEdit(el.getAttribute('data-bedit')); return; }
     if (el.hasAttribute('data-addcat')) { var ak = el.getAttribute('data-addcat'); hydrate(ak, function () { openAddSheet(ak); }); return; }
     if (el.hasAttribute('data-addmode')) { addMode = el.getAttribute('data-addmode'); rFrom = ''; rTo = ''; if (!addMode) searchQ = ''; render(); return; }
     if (el.hasAttribute('data-hint')) { searchQ = el.getAttribute('data-hint'); render(); return; }
