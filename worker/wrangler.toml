@@ -1,0 +1,11 @@
+name = "wingman-push"
+main = "index.js"
+compatibility_date = "2024-11-01"
+
+[triggers]
+crons = ["*/10 * * * *"]
+
+# Create a KV namespace named WM and put its id here (or bind it in the dashboard):
+# [[kv_namespaces]]
+# binding = "WM"
+# id = "<your KV namespace id>"

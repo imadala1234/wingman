@@ -430,6 +430,23 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
 :root[data-preset="sunrise"][data-theme="dark"] { --bg: #1E1410; --surface: #2B1D17; --surface2: #3A2820; --ink: #FFEFE2; --muted: #C9A88F; --line: #4A332A; }
 :root[data-preset="runway"][data-theme="dark"] { --bg: #111315; --surface: #1B1E21; --surface2: #26292D; --ink: #F2F3F4; --muted: #9AA1A8; --line: #33373C; }
 :root[data-preset="ocean"][data-theme="dark"] { --bg: #06222B; --surface: #0C3340; --surface2: #12475A; --ink: #E6F7FB; --muted: #86B7C6; --line: #1E5367; }
+
+/* ---- passport covers ---- */
+.pgrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.pcov { all: unset; box-sizing: border-box; cursor: pointer; position: relative; display: flex; flex-direction: column; align-items: center; aspect-ratio: 5 / 7; border-radius: 6px 12px 12px 6px; padding: 12% 8% 8%; text-align: center; overflow: hidden; color: var(--pgold, #D9BF77);
+  background: linear-gradient(100deg, rgba(0,0,0,.28) 0, rgba(255,255,255,.05) 5%, rgba(0,0,0,0) 9%), linear-gradient(165deg, color-mix(in srgb, var(--pc) 84%, #fff 16%), var(--pc) 55%, color-mix(in srgb, var(--pc) 86%, #000 14%));
+  box-shadow: 0 8px 20px rgba(0,0,0,.28), inset 0 0 0 1px rgba(255,255,255,.06); transition: transform .12s ease; }
+.pcov:active { transform: scale(.97); }
+.pcov::before { content: ""; position: absolute; inset: 0; opacity: .22; mix-blend-mode: overlay; pointer-events: none;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 1  0 0 0 0 1  0 0 0 0 1  0 0 0 .9 0'/></filter><rect width='160' height='160' filter='url(%23n)'/></svg>"); }
+.pcov > * { position: relative; text-shadow: 0 1px 0 rgba(0,0,0,.4), 0 0 1px rgba(255,235,170,.25); }
+.pcov svg { width: 46%; height: auto; stroke: currentColor; fill: none; stroke-width: 1.2; stroke-linecap: round; filter: drop-shadow(0 1px 0 rgba(0,0,0,.4)); }
+.pcov .pc-c { margin-top: 12%; font-weight: 400; letter-spacing: .26em; margin-right: -.26em; text-transform: uppercase; line-height: 1.25; text-wrap: balance; }
+.pcov .pc-p { margin-top: 7%; font-size: 10px; letter-spacing: .3em; margin-right: -.3em; opacity: .92; }
+.pcov .pc-n { margin-top: auto; font-size: 11.5px; letter-spacing: .12em; text-transform: uppercase; font-weight: 600; max-width: 100%; overflow-wrap: anywhere; line-height: 1.25; }
+.pcov .pc-chip { margin-top: 8px; width: 22px; height: 14px; border: 1.2px solid currentColor; border-radius: 2px; display: grid; place-items: center; opacity: .9; }
+.pcov .pc-chip::after { content: ""; width: 6px; height: 6px; border: 1.2px solid currentColor; border-radius: 50%; }
+.pcov .pc-x { position: absolute; top: 7px; right: 8px; width: 9px; height: 9px; border-radius: 50%; background: var(--dot, #6FD99B); box-shadow: 0 0 0 2px rgba(0,0,0,.25); }
 </style>
 
 <header class="top gut"><div id="top"></div></header>
@@ -500,7 +517,7 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
   function regSaved() { Object.keys((S && S.airports) || {}).forEach(function (c) { if (!AP[c]) AP[c] = S.airports[c]; }); }
   regSaved();
   function persist() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
-  function save() { S.rev = Date.now(); persist(); gQueue(); }
+  function save() { S.rev = Date.now(); persist(); gQueue(); pushQueue(); }
 
   /* ---------- Google sign-in and Sheets sync ---------- */
   var G_ID = '760430665288-j9jlkhfm9ehjmnpc84m0lh6fqen9m2o6.apps.googleusercontent.com', G_SCOPE = 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/userinfo.email', GK = 'wingman-google';
@@ -602,6 +619,60 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
         else if ((S.rev || 0) > (rm.rev || 0) || G.dirty) return gWrite();
       });
     }
+  }
+  /* ---------- push alerts: the app registers this phone with the WingMan push server, which watches flights and sends alerts ---------- */
+  var VAPID_PUB = 'BCAnHM4cep2fGxQoIR9pJdQjcJZYTdtNNIqtes0XOUTWTt0maoBO2Pb4Sdq_RUKYb_yj7CZBxtuE-kEeg4Xu_g0', PK = { url: 'wingman-push-url', id: 'wingman-push-id', on: 'wingman-push-on' }, PUSHMSG = '', pushT = 0;
+  function lsGet(k) { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } }
+  function lsSet(k, v) { try { if (v) localStorage.setItem(k, v); else localStorage.removeItem(k); } catch (e) {} }
+  function pushUrl() { return lsGet(PK.url).replace(/\/+$/, ''); }
+  function pushEnabled() { return lsGet(PK.on) === '1' && !!pushUrl(); }
+  function pushId() { var i = lsGet(PK.id); if (!i) { i = Array.prototype.map.call(crypto.getRandomValues(new Uint8Array(18)), function (b) { return ('0' + b.toString(16)).slice(-2); }).join(''); lsSet(PK.id, i); } return i; }
+  function pushSupport() {
+    var ios = /iPhone|iPad|iPod/.test(navigator.userAgent), stand = window.navigator.standalone || (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
+    if (!('serviceWorker' in navigator) || !('PushManager' in window) || !('Notification' in window)) return ios && !stand ? 'On iPhone, open WingMan from the Home Screen icon first, then turn alerts on.' : 'This browser does not support push alerts.';
+    if (ios && !stand) return 'On iPhone, open WingMan from the Home Screen icon first, then turn alerts on.';
+    return '';
+  }
+  function pushFlights() {
+    var n = Date.now();
+    return S.flights.concat(S.tracked).filter(function (f) { return effArr(f) > n - 2 * 3600000 && !f.cancelled && AP[f.from] && AP[f.to]; }).slice(0, 40).map(function (f) {
+      return { id: f.id, no: f.no, from: f.from, to: f.to, dep: f.dep, arr: f.arr, tz: AP[f.from].tz, fromName: AP[f.from].n, toName: AP[f.to].n, intl: isIntl(f), delay: f.delay || 0, gate: f.gate || '', terminal: f.terminal || '', cancelled: !!f.cancelled };
+    });
+  }
+  function pushPost(path, body) {
+    return fetch(pushUrl() + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.assign({ id: pushId() }, body || {})) }).then(function (x) {
+      return x.json().catch(function () { return {}; }).then(function (j) { if (!x.ok) throw new Error(j.error || ('Push server replied ' + x.status)); return j; });
+    }, function () { throw new Error('Could not reach the push server. Check the address.'); });
+  }
+  function pushSync(sub) {
+    if (!pushEnabled()) return Promise.resolve();
+    var go = sub ? Promise.resolve(sub) : navigator.serviceWorker.ready.then(function (reg) { return reg.pushManager.getSubscription(); });
+    return go.then(function (sb) { if (!sb) return; return pushPost('/sync', { sub: sb.toJSON ? sb.toJSON() : sb, flights: pushFlights(), settings: S.settings }); }).then(function () { PUSHMSG = ''; }, function (e) { PUSHMSG = e.message; });
+  }
+  function pushQueue() { if (!pushEnabled()) return; clearTimeout(pushT); pushT = setTimeout(function () { pushSync(); }, 3000); }
+  function b64uBytes(b) { var p = (b + '===').slice(0, b.length + (4 - b.length % 4) % 4), raw = atob(p.replace(/-/g, '+').replace(/_/g, '/')); return Uint8Array.from(raw, function (c) { return c.charCodeAt(0); }); }
+  function pushOn() {
+    var u = (document.getElementById('pushurl') || {}).value; if (u && u.trim()) lsSet(PK.url, u.trim());
+    if (!pushUrl()) { toast('Push server address needed', 'Paste the address from the setup steps.'); return; }
+    var sup = pushSupport(); if (sup) { PUSHMSG = sup; render(); return; }
+    Notification.requestPermission().then(function (perm) {
+      if (perm !== 'granted') throw new Error('Notifications are blocked. Allow them for WingMan in iPhone Settings, then try again.');
+      return navigator.serviceWorker.ready;
+    }).then(function (reg) {
+      return reg.pushManager.getSubscription().then(function (ex) { return ex || reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64uBytes(VAPID_PUB) }); });
+    }).then(function (sub) { lsSet(PK.on, '1'); return pushSync(sub).then(function () { if (PUSHMSG) throw new Error(PUSHMSG); return pushPost('/test'); }); })
+      .then(function () { PUSHMSG = ''; render(); toast('Push alerts are on', 'A test alert is on its way.'); }, function (e) { lsSet(PK.on, ''); PUSHMSG = e.message; render(); toast('Could not turn on alerts', e.message); });
+  }
+  function pushOff() {
+    var done = function () { lsSet(PK.on, ''); PUSHMSG = ''; render(); toast('Push alerts off'); };
+    pushPost('/off').catch(function () {}).then(function () { return navigator.serviceWorker.ready; }).then(function (reg) { return reg.pushManager.getSubscription(); }).then(function (sb) { return sb && sb.unsubscribe(); }).then(done, done);
+  }
+  function pushCard() {
+    var on = pushEnabled(), perm = window.Notification ? Notification.permission : 'unsupported';
+    return '<div class="card"><span class="label">Push alerts</span>' +
+      '<div class="row"><div><div class="t">Alerts on your lock screen</div><div class="d">' + (on ? 'On. Delays, gate changes, cancellations and reminders are sent even when WingMan is closed.' : 'Get delays, gate changes and reminders even when WingMan is closed.') + (perm === 'denied' ? '<br>Notifications are blocked for this app in iPhone Settings.' : '') + '</div>' + (PUSHMSG ? '<div class="d" style="color:var(--bad)">' + esc(PUSHMSG) + '</div>' : '') + '</div><span class="pill ' + (on ? 'ok' : 'warn') + '">' + (on ? 'On' : 'Off') + '</span></div>' +
+      (pushUrl() && on ? '' : '<div class="f" style="margin:4px 0 8px"><input id="pushurl" type="url" inputmode="url" placeholder="Push server address" value="' + esc(pushUrl()) + '" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Push server address"></div>') +
+      '<div class="btns">' + (on ? '<button class="btn primary sm" data-act="pushtest">Send test alert</button><button class="btn sm" data-act="pushoff">Turn off</button>' : '<button class="btn primary sm" data-act="pushon">Turn on push alerts</button>') + '</div></div>';
   }
   function gQueue() {
     if (!G.linked) return; G.dirty = true; clearTimeout(G.timer);
@@ -885,9 +956,21 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
       (fl ? '<div class="flag">' + esc(fl) + '</div>' : '') + (p.notes ? '<div class="note">' + esc(p.notes) + '</div>' : '') +
       '<div class="btns"><button class="btn sm danger" data-pdel="' + p.id + '">Delete</button></div></div>';
   }
+  var GLOBE = '<svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="17"/><ellipse cx="24" cy="24" rx="7.5" ry="17"/><path d="M7 24h34M10 15h28M10 33h28"/><path d="M24 2.5v4M24 41.5v4M2.5 24h4M41.5 24h4" opacity=".7"/></svg>';
+  function passportCover(p) {
+    var st = pstate(p), nm = (CN[p.country] || p.country).toUpperCase(), lw = nm.split(' ').reduce(function (m, w) { return Math.max(m, w.length); }, 1), fs = Math.max(11, Math.min(19, Math.floor(168 / lw)));
+    return '<button type="button" class="pcov" data-ppen="' + esc(p.id) + '" aria-label="' + esc(p.holder) + ', ' + esc(nm) + ' passport. ' + esc(st[0]) + '" style="--pc:' + (PCOL[p.country] || ('hsl(' + (hsh(p.country) % 360) + ',45%,20%)')) + ';--dot:' + (st[1] === 'bad' ? '#FF7A6B' : st[1] === 'warn' ? '#FFC24D' : '#6FD99B') + '">' +
+      '<span class="pc-x"></span>' + GLOBE + '<span class="pc-c" style="font-size:' + fs + 'px">' + esc(nm) + '</span><span class="pc-p">PASSPORT</span><span class="pc-chip"></span><span class="pc-n">' + esc(p.holder) + '</span></button>';
+  }
+  function openPassport(id) {
+    var p = S.passports.filter(function (x) { return x.id === id; })[0]; if (!p) return;
+    detail = '__pp:' + id; var sh = document.getElementById('sheet');
+    sh.innerHTML = '<div class="sheet-bar gut"><div class="sheet-top"><button class="btn sm" data-act="back">Back</button><span class="pill ' + pstate(p)[1] + '">' + pstate(p)[0] + '</span></div></div><div class="sheet-scroll gut"><div class="sheet-in">' + passportCard(p) + '</div></div>';
+    sh.hidden = false;
+  }
   function passportsBody() {
     var h = '', ps = S.passports.slice().sort(function (a, b) { return pdays(a) - pdays(b); });
-    h += '<section class="section">' + (ps.length ? ps.map(passportCard).join('') : '<div class="card">' + emptyCard('passport', 'No passports yet', 'Tap the + button to add a traveller and their passport.') + '</div>') + noPassportCards() +
+    h += '<section class="section">' + (ps.length ? '<div class="pgrid">' + ps.map(passportCover).join('') + '</div>' : '<div class="card">' + emptyCard('passport', 'No passports yet', 'Tap the + button to add a traveller and their passport.') + '</div>') + noPassportCards() +
       '</section>';
     return h;
   }
@@ -1444,6 +1527,7 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
       setRow('checkin', 'Check-in reminder', st.checkinHrs + ' hours before departure.') +
       setRow('leave', 'Time to leave for the airport', 'Allows ' + st.leaveMins + ' min domestic, plus 90 min international.') +
       setRow('boarding', 'Boarding reminder', '40 minutes before departure.') + '</div>' +
+      pushCard() +
       '<div class="card"><span class="label">Your data</span>' +
       gCard() +
       '<div class="row"><div><div class="t">Google Drive folder</div><div class="d">' + (G.folder ? '<a href="https://drive.google.com/drive/folders/' + esc(G.folder) + '" target="_blank" rel="noopener">Open your WingMan folder</a><br>E-tickets and confirmations you attach are saved here.' : 'Created in your Drive when you sign in. Holds your sheet and attached e-tickets.') + '</div></div><span class="pill ' + (G.folder ? 'ok' : 'idle') + '">' + (G.folder ? 'Linked' : 'Not linked') + '</span></div>' +
@@ -1564,7 +1648,7 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
 
   /* ---------- actions ---------- */
   document.addEventListener('click', function (e) {
-    var el = e.target.closest('[data-go],[data-open],[data-act],[data-del],[data-copy],[data-fab],[data-reveal],[data-pdel],[data-tsub],[data-lsub],[data-live],[data-lview],[data-mapwx],[data-track],[data-untrack],[data-save],[data-hint],[data-sdate],[data-addfor],[data-addpax],[data-addcat],[data-addmode],[data-fdel]');
+    var el = e.target.closest('[data-go],[data-open],[data-act],[data-del],[data-copy],[data-fab],[data-reveal],[data-ppen],[data-pdel],[data-tsub],[data-lsub],[data-live],[data-lview],[data-mapwx],[data-track],[data-untrack],[data-save],[data-hint],[data-sdate],[data-addfor],[data-addpax],[data-addcat],[data-addmode],[data-fdel]');
     if (!el) return;
     if (el.hasAttribute('data-fab')) { addWho = ''; if (fabTarget() === 'add') { addMode = ''; searchQ = ''; rFrom = ''; rTo = ''; } go(fabTarget()); return; }
     if (el.hasAttribute('data-mapwx')) { mapWx = !mapWx; render(); return; }
@@ -1584,9 +1668,10 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
     if (el.hasAttribute('data-live')) { liveSel = el.getAttribute('data-live'); if (view !== 'live') go('live'); else render(); return; }
     if (el.hasAttribute('data-go')) { go(el.getAttribute('data-go')); return; }
     if (el.hasAttribute('data-open')) { e.preventDefault(); openDetail(el.getAttribute('data-open')); return; }
-    if (el.hasAttribute('data-reveal')) { var rid = el.getAttribute('data-reveal'); revealed[rid] = !revealed[rid]; render(); return; }
+    if (el.hasAttribute('data-ppen')) { openPassport(el.getAttribute('data-ppen')); return; }
+    if (el.hasAttribute('data-reveal')) { var rid = el.getAttribute('data-reveal'); revealed[rid] = !revealed[rid]; if (String(detail).indexOf('__pp:') === 0) openPassport(detail.slice(5)); else render(); return; }
     if (el.hasAttribute('data-pdel')) {
-      if (el.getAttribute('data-armed')) { var pid = el.getAttribute('data-pdel'); S.passports = S.passports.filter(function (x) { return x.id !== pid; }); save(); render(); toast('Passport deleted'); }
+      if (el.getAttribute('data-armed')) { var pid = el.getAttribute('data-pdel'); S.passports = S.passports.filter(function (x) { return x.id !== pid; }); save(); if (String(detail).indexOf('__pp:') === 0) closeDetail(); else render(); toast('Passport deleted'); }
       else { el.setAttribute('data-armed', '1'); el.textContent = 'Tap again to delete'; }
       return;
     }
@@ -1611,6 +1696,9 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
     else if (act === 'gsignin' || act === 'gsync') gSync(true);
     else if (act === 'gsignout') gOut();
     else if (act === 'savekey') { var kv = (document.getElementById('adbkey') || {}).value; kv = (kv || '').trim(); if (kv) { try { localStorage.setItem(ADBK, kv); } catch (x) {} LIVE = {}; SR = {}; render(); pollAll(true); toast('Key saved', 'Flight search and status now use live data.'); } }
+    else if (act === 'pushon') pushOn();
+    else if (act === 'pushoff') pushOff();
+    else if (act === 'pushtest') pushPost('/test').then(function () { toast('Test alert sent', 'It should arrive in a few seconds.'); }, function (e) { toast('Could not send', e.message); });
     else if (act === 'clearkey') { try { localStorage.removeItem(ADBK); } catch (x) {} LIVE = {}; SR = {}; render(); toast('Key removed'); }
     else if (act === 'clear') { S.flights = []; S.alerts = []; save(); render(); toast('All flights cleared'); }
   });
