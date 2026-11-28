@@ -447,6 +447,18 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
 .pcov .pc-chip { margin-top: 8px; width: 22px; height: 14px; border: 1.2px solid currentColor; border-radius: 2px; display: grid; place-items: center; opacity: .9; }
 .pcov .pc-chip::after { content: ""; width: 6px; height: 6px; border: 1.2px solid currentColor; border-radius: 50%; }
 .pcov .pc-x { position: absolute; top: 7px; right: 8px; width: 9px; height: 9px; border-radius: 50%; background: var(--dot, #6FD99B); box-shadow: 0 0 0 2px rgba(0,0,0,.25); }
+
+/* ---- audit fixes ---- */
+.hero .btn:not(.primary) { background: transparent; color: inherit; border-color: color-mix(in srgb, currentColor 40%, transparent); }
+.trip2-head { flex-wrap: wrap; row-gap: 2px; } .trip2-head h3 { min-width: 0; overflow-wrap: anywhere; } .trip2-head .label { white-space: nowrap; }
+.kv dd.long { grid-column: 1 / -1; text-align: left; } .kv dd.long + dt { margin-top: 0; }
+.kv dt { align-self: baseline; } .kv dd { min-width: 0; }
+.nw { white-space: nowrap; }
+.scroll .app { padding-bottom: 96px; }
+.bp-bot b.rel { font-size: 14px; }
+.row > .btns { flex: none; } .pass-route .mid span { white-space: nowrap; }
+.kv dd.mono.nowrap { white-space: nowrap; font-size: 13px; }
+.pcov { container-type: inline-size; }
 </style>
 
 <header class="top gut"><div id="top"></div></header>
@@ -807,6 +819,7 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
   /* ---------- shared pieces ---------- */
   /* ---------- visual helpers: airline badges, boarding pass, empty states ---------- */
   var ACOL = { QF: ['#E40000', '#fff'], VA: ['#E4002B', '#fff'], JQ: ['#FF5000', '#fff'], SQ: ['#F2A900', '#0A1B45'], EK: ['#D71921', '#fff'], AI: ['#E31837', '#fff'], QR: ['#5C0632', '#fff'], MH: ['#0B3C8C', '#fff'], TG: ['#4B1E78', '#fff'], CX: ['#006564', '#fff'], NZ: ['#1A1A1A', '#fff'], BA: ['#075AAA', '#fff'], '6E': ['#2A2E9A', '#fff'], UL: ['#0C3C73', '#fff'], EY: ['#B58F4F', '#fff'], FJ: ['#0B5ED7', '#fff'], AK: ['#E5171F', '#fff'], TR: ['#F3C500', '#111'], CZ: ['#0059A8', '#fff'], GA: ['#0E7AC4', '#fff'], VN: ['#1B5E9E', '#fff'], DL: ['#C01933', '#fff'], UA: ['#1F4FA8', '#fff'], AA: ['#0B6AA8', '#fff'], LH: ['#05164D', '#fff'], AF: ['#0B2A6F', '#fff'], KL: ['#00A1DE', '#fff'], JL: ['#C8102E', '#fff'], NH: ['#13448F', '#fff'] };
+  function tlabel(t) { t = String(t || '').trim(); if (!t) return '-'; return /^\d+[A-Za-z]?$/.test(t) ? 'T' + t : t; }
   function acode(f) { return String(f.no || '').replace(/[^A-Za-z0-9]/g, '').slice(0, 2).toUpperCase(); }
   function acol(f) { var c = acode(f); if (ACOL[c]) return ACOL[c]; return ['hsl(' + (hsh(c) % 360) + ',55%,38%)', '#fff']; }
   function abadge(f) { var c = acol(f); return '<span class="ab" style="background:' + c[0] + ';color:' + c[1] + '">' + esc(acode(f) || '--') + '</span>'; }
@@ -815,7 +828,7 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
     var inner = '<button class="bp' + (s[1] === 'bad' ? ' bad' : s[1] === 'warn' ? ' warn' : '') + (past ? ' past' : '') + '" data-open="' + f.id + '" style="--ac:' + col[0] + '">' +
       '<div class="bp-top">' + abadge(f) + '<span class="bp-air">' + esc(f.airline || 'Flight') + ' &middot; ' + esc(f.no) + ' &middot; ' + df(d, a.tz) + '</span><span class="pill ' + s[1] + '">' + s[0] + '</span></div>' +
       '<div class="bp-main"><div class="bp-end"><b>' + f.from + '</b><small>' + esc(a.n) + '</small></div><div class="bp-path">' + PLANE + '<span class="dur">' + dur(f.dep, f.arr) + '</span></div><div class="bp-end r"><b>' + f.to + '</b><small>' + esc(b.n) + '</small></div></div>' +
-      '<div class="bp-perf"></div><div class="bp-bot"><div><span class="label">Departs</span><b>' + tf(d, a.tz) + '</b></div><div><span class="label">Gate</span><b>' + esc(f.gate || 'TBA') + '</b></div><div><span class="label">Seat</span><b>' + esc(f.seat || '-') + '</b></div><div class="r"><span class="label">' + (past ? 'Flown' : 'In') + '</span><b data-cd="' + d + '" data-mode="rel"></b></div></div></button>';
+      '<div class="bp-perf"></div><div class="bp-bot"><div><span class="label">Departs</span><b>' + tf(d, a.tz) + '</b></div><div><span class="label">Gate</span><b>' + esc(f.gate || 'TBA') + '</b></div><div><span class="label">Seat</span><b>' + esc(f.seat || '-') + '</b></div><div class="r"><span class="label">' + (past ? 'Flown' : 'Leaves') + '</span><b data-cd="' + d + '" data-mode="rel"></b></div></div></button>';
     return '<div class="bpw"' + (swipe ? ' data-swipe="1"' : '') + '>' + (swipe ? '<button class="bpdel" type="button" data-del="' + f.id + '">Delete</button>' : '') + inner + '</div>';
   }
   var EART = {
@@ -846,7 +859,7 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
       h += '<section class="hero" aria-label="Next flight">' +
         '<div class="r1"><span class="label" style="display:flex;align-items:center">' + abadge(n) + 'Next flight &middot; ' + esc(n.no) + '</span><span class="pill ' + s[1] + '">' + s[0] + '</span></div>' +
         '<div class="r2"><div class="hero-route"><span class="code">' + n.from + '</span><span class="line">' + PLANE + '</span><span class="code">' + n.to + '</span></div><div class="hero-count" data-cd="' + effDep(n) + '" data-mode="big"></div></div>' +
-        '<div class="r3"><div class="hero-meta"><span><b>' + tf(effDep(n), a.tz) + '</b> ' + df(effDep(n), a.tz) + '</span><span><b>' + esc(n.terminal || '-') + '</b> &middot; Gate <b>' + esc(n.gate || 'TBA') + '</b></span></div>' +
+        '<div class="r3"><div class="hero-meta"><span><b>' + tf(effDep(n), a.tz) + '</b> ' + df(effDep(n), a.tz) + '</span><span><b>' + esc(tlabel(n.terminal)) + '</b> &middot; Gate <b>' + esc(n.gate || 'TBA') + '</b></span></div>' +
         '<div class="btns"><button class="btn primary" data-open="' + n.id + '">Open</button><button class="btn" data-live="' + n.id + '">Live</button></div></div></section>';
     } else {
       h += '<section class="card">' + emptyCard('runway', 'No upcoming flights', 'Tap the + button to add one. Your next flight shows here with a countdown.') + '</section>';
@@ -871,7 +884,7 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
     order.forEach(function (t) { (trips[t].some(function (f) { return effArr(f) > Date.now() && !f.cancelled; }) ? upT : pastT).push(t); });
     function block(t, past) {
       var fs = trips[t], first = fs[0], last = fs[fs.length - 1];
-      return '<div class="trip2"><div class="trip2-head"><h3>' + esc(t) + '</h3><span class="label">' + dshort(first.dep, AP[first.from].tz) + ' to ' + dshort(last.arr, AP[last.to].tz) + '</span></div>' + fs.map(function (f) { return passCard(f, past); }).join('') + '</div>';
+      return '<div class="trip2"><div class="trip2-head"><h3>' + esc(t) + '</h3><span class="label">' + (dshort(first.dep, AP[first.from].tz) === dshort(last.arr, AP[last.to].tz) ? dshort(first.dep, AP[first.from].tz) : dshort(first.dep, AP[first.from].tz) + ' to ' + dshort(last.arr, AP[last.to].tz)) + '</span></div>' + fs.map(function (f) { return passCard(f, past); }).join('') + '</div>';
     }
     h += '<section class="section"><div class="sechead"><h2>Upcoming</h2><span class="label">' + upcoming().length + ' flights</span></div>' +
       (upT.length ? upT.map(function (t) { return block(t, false); }).join('') : '<div class="card">' + emptyCard('runway', 'No upcoming flights', 'Tap the + button to add one, or search for a flight number.') + '</div>') + '</section>';
@@ -929,7 +942,7 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
       return '<div class="stamp" style="--r:' + ((hsh(c) % 9) - 4) + 'deg"><b>' + esc(CN[c] || c) + '</b><small>' + new Intl.DateTimeFormat('en-AU', { timeZone: MY_TZ, month: 'short', year: 'numeric' }).format(first[c]).toUpperCase() + '</small></div>';
     }).join('') + '</div></section>';
     var cs = Object.keys(cities);
-    h += '<section class="section"><div class="sechead"><h2>Places visited</h2><span class="label">' + cs.length + ' airports</span></div>' +
+    h += '<section class="section"><div class="sechead"><h2>Places visited</h2><span class="label">' + cs.length + (cs.length === 1 ? ' airport' : ' airports') + '</span></div>' +
       (cs.length ? '<div class="chips">' + cs.map(function (c) { return '<span class="place">' + AP[c].n + '<small>' + c + '</small></span>'; }).join('') + '</div>' : '<div class="list"><div class="empty">Places show up here once you land.</div></div>') + '</section>';
     var all = S.flights.slice().sort(function (a, b) { return b.dep - a.dep; }), years = [], by = {};
     all.forEach(function (f) { var y = new Intl.DateTimeFormat('en-AU', { timeZone: AP[f.from].tz, year: 'numeric' }).format(f.dep); if (!by[y]) { by[y] = []; years.push(y); } by[y].push(f); });
@@ -958,9 +971,9 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
   }
   var GLOBE = '<svg viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="17"/><ellipse cx="24" cy="24" rx="7.5" ry="17"/><path d="M7 24h34M10 15h28M10 33h28"/><path d="M24 2.5v4M24 41.5v4M2.5 24h4M41.5 24h4" opacity=".7"/></svg>';
   function passportCover(p) {
-    var st = pstate(p), nm = (CN[p.country] || p.country).toUpperCase(), lw = nm.split(' ').reduce(function (m, w) { return Math.max(m, w.length); }, 1), fs = Math.max(11, Math.min(19, Math.floor(168 / lw)));
+    var st = pstate(p), nm = (CN[p.country] || p.country).toUpperCase(), lw = nm.split(' ').reduce(function (m, w) { return Math.max(m, w.length); }, 1), fs = lw;
     return '<button type="button" class="pcov" data-ppen="' + esc(p.id) + '" aria-label="' + esc(p.holder) + ', ' + esc(nm) + ' passport. ' + esc(st[0]) + '" style="--pc:' + (PCOL[p.country] || ('hsl(' + (hsh(p.country) % 360) + ',45%,20%)')) + ';--dot:' + (st[1] === 'bad' ? '#FF7A6B' : st[1] === 'warn' ? '#FFC24D' : '#6FD99B') + '">' +
-      '<span class="pc-x"></span>' + GLOBE + '<span class="pc-c" style="font-size:' + fs + 'px">' + esc(nm) + '</span><span class="pc-p">PASSPORT</span><span class="pc-chip"></span><span class="pc-n">' + esc(p.holder) + '</span></button>';
+      '<span class="pc-x"></span>' + GLOBE + '<span class="pc-c" style="font-size:min(19px, ' + (82 / fs).toFixed(2) + 'cqw)">' + esc(nm) + '</span><span class="pc-p">PASSPORT</span><span class="pc-chip"></span><span class="pc-n">' + esc(p.holder) + '</span></button>';
   }
   function openPassport(id) {
     var p = S.passports.filter(function (x) { return x.id === id; })[0]; if (!p) return;
@@ -1039,12 +1052,12 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
       '<div class="lrow"><div><span class="label">' + (air ? 'Lands in' : 'Departs in') + '</span><div class="cd" data-cd="' + (air ? ar : d) + '" data-mode="big" data-past="' + (air ? 'Landed' : 'Departed') + '"></div></div>' +
       '<div class="lnote">' + dur(f.dep, f.arr) + ' flight<br>' + Math.round(km(f) / 10) * 10 + ' km' + (air ? '<br>' + pc + '% complete' : '') + '</div></div>' +
       '<div class="tkrow"><span class="code">' + f.from + '</span><div class="tk" role="img" aria-label="' + pc + ' percent of the flight completed"><i style="width:calc(' + p + ' * (100% - 24px) + 12px)"></i><span class="plane" style="left:calc(12px + ' + p + ' * (100% - 24px))">' + PLANE + '</span></div><span class="code">' + f.to + '</span></div>' +
-      '<div class="times">' + tcell('Departure', f.dep, d, a.tz, 'T' + esc((f.terminal || '-').replace(/^T/i, '')) + ' &middot; Gate ' + esc(f.gate || 'TBA')) + tcell('Arrival', f.arr, ar, b.tz, (f.aterm ? 'T' + esc(String(f.aterm).replace(/^T/i, '')) + ' &middot; ' : '') + 'Gate ' + esc(f.agate || 'TBA'), 'r') + '</div>' +
+      '<div class="times">' + tcell('Departure', f.dep, d, a.tz, '<span class="nw">' + esc(tlabel(f.terminal)) + '</span> &middot; <span class="nw">Gate ' + esc(f.gate || 'TBA') + '</span>') + tcell('Arrival', f.arr, ar, b.tz, (f.aterm ? '<span class="nw">' + esc(tlabel(f.aterm)) + '</span> &middot; ' : '') + '<span class="nw">Gate ' + esc(f.agate || 'TBA') + '</span>', 'r') + '</div>' +
       liveRow(f) + '</section>';
     if (nx) {
       var lay = effDep(nx) - ar, tight = lay < 60 * 60000;
       h += '<section class="card tight"><div class="sechead"><span class="label">Connection at ' + AP[nx.from].n + '</span><span class="pill ' + (tight ? 'warn' : 'ok') + '">' + (tight ? 'Tight' : 'Comfortable') + '</span></div>' +
-        '<div class="row"><div><div class="t">' + esc(nx.no) + ' to ' + AP[nx.to].n + '</div><div class="d">Departs ' + tf(effDep(nx), AP[nx.from].tz) + ' &middot; Terminal ' + esc(nx.terminal || '-') + ' &middot; Gate ' + esc(nx.gate || 'TBA') + '</div></div><div class="mono" style="font-size:15px">' + span(lay) + '</div></div></section>';
+        '<div class="row"><div><div class="t">' + esc(nx.no) + ' to ' + AP[nx.to].n + '</div><div class="d">Departs ' + tf(effDep(nx), AP[nx.from].tz) + ' &middot; ' + esc(tlabel(nx.terminal)) + ' &middot; Gate ' + esc(nx.gate || 'TBA') + '</div></div><div class="mono" style="font-size:15px">' + span(lay) + '</div></div></section>';
     }
     return h + liveActions(f);
   }
@@ -1471,7 +1484,7 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
   }
   function addView() {
     var trips = []; S.flights.forEach(function (f) { if (trips.indexOf(f.trip) < 0) trips.push(f.trip); });
-    var h = head('Enter details', { backTo: 'add' }) + '<section class="section"><form id="addForm" novalidate>';
+    var h = head('Enter details', { close: true }) + '<section class="section"><form id="addForm" novalidate>';
     h += '<fieldset><legend>Flight</legend>' +
       '<div class="f"><label for="airline">Airline</label><input id="airline" name="airline" placeholder="Qantas" autocomplete="off"></div>' +
       '<div class="f"><label for="no">Flight number *</label><input id="no" name="no" class="caps" placeholder="QF520" autocomplete="off"></div>' +
@@ -1488,7 +1501,7 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
       '<div class="f"><label for="seat">Seat</label><input id="seat" name="seat" class="caps" placeholder="14C" autocomplete="off"></div>' +
       '<div class="f"><label for="cabin">Cabin</label><select id="cabin" name="cabin"><option>Economy</option><option>Premium Economy</option><option>Business</option><option>First</option></select></div>' +
       '<div class="f"><label for="terminal">Terminal</label><input id="terminal" name="terminal" class="caps" placeholder="T3" autocomplete="off"></div>' +
-      '<div class="f"><label for="gate">Gate</label><input id="gate" name="gate" class="caps" placeholder="Not assigned yet" autocomplete="off"></div>' +
+      '<div class="f"><label for="gate">Gate</label><input id="gate" name="gate" class="caps" placeholder="TBA" autocomplete="off"></div>' +
       '<div class="f full"><label for="pax">Passengers (comma separated)</label><input id="pax" name="pax" placeholder="Surendra Madala" autocomplete="off"></div>' +
       '<div class="f full"><div class="hints">' + S.travellers.map(function (t) { return '<button type="button" class="hint" data-addpax="' + esc(t.name) + '">+ ' + esc(t.name) + '</button>'; }).join('') + '</div></div>' +
       '<div class="f full note">Use the same name as on the passport so WingMan can check passport validity for this trip.</div></fieldset>';
@@ -1521,7 +1534,6 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
     var st = S.settings;
     return head('Settings') + '<section class="section">' + appearanceCard() +
       '<div class="card"><span class="label">Alerts</span>' +
-      setRow('push', 'Push notifications', 'iPhone: install to Home Screen to receive them.') +
       setRow('delay', 'Delays and cancellations', 'As soon as the airline changes the time.') +
       setRow('gate', 'Gate and terminal changes', 'Includes first gate assignment.') +
       setRow('checkin', 'Check-in reminder', st.checkinHrs + ' hours before departure.') +
@@ -1559,15 +1571,15 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
       '<div class="pass"><div class="pass-top"><div class="label">' + esc(f.airline || 'Flight') + ' &middot; ' + esc(f.no) + ' &middot; ' + dfy(d, a.tz) + '</div>' +
       '<div class="pass-route"><div><div class="code">' + f.from + '</div><div class="city">' + a.n + '</div></div><div class="mid">' + PLANE + '<span>' + dur(f.dep, f.arr) + '</span></div><div class="end"><div class="code">' + f.to + '</div><div class="city">' + b.n + '</div></div></div>' +
       '<div class="times"><div><div class="label">Departs</div><div class="big">' + tf(d, a.tz) + delayTxt + '</div></div><div class="r"><div class="label">Arrives</div><div class="big">' + tf(ar, b.tz) + '</div></div></div></div>' +
-      '<div class="perf"></div><div class="pass-bot"><div><div class="label">Terminal</div><div class="v">' + esc(f.terminal || '-') + '</div></div><div><div class="label">Gate</div><div class="v hl">' + esc(f.gate || 'TBA') + '</div></div><div><div class="label">Seat</div><div class="v">' + esc(f.seat || '-') + '</div></div></div></div>' +
+      '<div class="perf"></div><div class="pass-bot"><div><div class="label">Terminal</div><div class="v">' + esc(tlabel(f.terminal)) + '</div></div><div><div class="label">Gate</div><div class="v hl">' + esc(f.gate || 'TBA') + '</div></div><div><div class="label">Seat</div><div class="v">' + esc(f.seat || '-') + '</div></div></div></div>' +
       (ar > Date.now() - 6 * 3600000 ? '<div class="card"><span class="label">Live status</span>' + liveRow(f) + '</div>' : '') +
       '<div class="card"><span class="label">Journey</span><ul class="timeline">' + tl + '</ul></div>' +
       '<div class="card"><span class="label">Booking</span><dl class="kv">' +
       '<dt>Booking reference</dt><dd class="mono">' + esc(f.ref || '-') + (f.ref ? '<button class="copy" data-copy="' + esc(f.ref) + '">Copy</button>' : '') + '</dd>' +
-      '<dt>Ticket number</dt><dd class="mono">' + esc(f.ticket || '-') + '</dd>' +
-      '<dt>Passengers</dt><dd>' + esc((f.pax || []).join(', ') || '-') + '</dd>' +
-      '<dt>Trip</dt><dd>' + esc(f.trip) + '</dd>' +
-      '<dt>Local time here</dt><dd class="mono">' + tf(d, MY_TZ) + ' ' + df(d, MY_TZ) + '</dd></dl></div>' +
+      '<dt>Ticket number</dt><dd class="mono' + ((f.ticket || '').length > 18 ? ' long' : '') + '">' + esc(f.ticket || '-') + '</dd>' +
+      '<dt>Passengers</dt><dd' + ((f.pax || []).join(', ').length > 22 ? ' class="long"' : '') + '>' + esc((f.pax || []).join(', ') || '-') + '</dd>' +
+      '<dt>Trip</dt><dd' + ((f.trip || '').length > 22 ? ' class="long"' : '') + '>' + esc(f.trip) + '</dd>' +
+      '<dt>Local time here</dt><dd class="mono nowrap">' + tf(d, MY_TZ) + ' ' + df(d, MY_TZ) + '</dd></dl></div>' +
       (f.notes ? '<div class="card"><span class="label">Notes</span><div style="overflow-wrap:anywhere">' + esc(f.notes) + '</div></div>' : '') +
       docsCard(f) +
       '<div class="btns"><button class="btn danger" data-del="' + f.id + '">' + (f.tracked ? 'Stop tracking' : 'Delete flight') + '</button></div></div></div>';
