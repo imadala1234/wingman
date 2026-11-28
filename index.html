@@ -621,7 +621,7 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
     }
   }
   /* ---------- push alerts: the app registers this phone with the WingMan push server, which watches flights and sends alerts ---------- */
-  var VAPID_PUB = 'BCAnHM4cep2fGxQoIR9pJdQjcJZYTdtNNIqtes0XOUTWTt0maoBO2Pb4Sdq_RUKYb_yj7CZBxtuE-kEeg4Xu_g0', PK = { url: 'wingman-push-url', id: 'wingman-push-id', on: 'wingman-push-on' }, PUSHMSG = '', pushT = 0;
+  var PK = { url: 'wingman-push-url', id: 'wingman-push-id', on: 'wingman-push-on' }, PUSHMSG = '', pushT = 0;
   function lsGet(k) { try { return localStorage.getItem(k) || ''; } catch (e) { return ''; } }
   function lsSet(k, v) { try { if (v) localStorage.setItem(k, v); else localStorage.removeItem(k); } catch (e) {} }
   function pushUrl() { return lsGet(PK.url).replace(/\/+$/, ''); }
@@ -640,26 +640,26 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
     });
   }
   function pushPost(path, body) {
-    return fetch(pushUrl() + path, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.assign({ id: pushId() }, body || {})) }).then(function (x) {
-      return x.json().catch(function () { return {}; }).then(function (j) { if (!x.ok) throw new Error(j.error || ('Push server replied ' + x.status)); return j; });
+    return fetch(pushUrl(), { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(Object.assign({ id: pushId(), action: path }, body || {})) }).then(function (x) {
+      return x.json().catch(function () { return {}; }).then(function (j) { if (!x.ok) throw new Error('Push server replied ' + x.status); if (j.error) throw new Error(j.error); return j; });
     }, function () { throw new Error('Could not reach the push server. Check the address.'); });
   }
   function pushSync(sub) {
     if (!pushEnabled()) return Promise.resolve();
     var go = sub ? Promise.resolve(sub) : navigator.serviceWorker.ready.then(function (reg) { return reg.pushManager.getSubscription(); });
-    return go.then(function (sb) { if (!sb) return; return pushPost('/sync', { sub: sb.toJSON ? sb.toJSON() : sb, flights: pushFlights(), settings: S.settings }); }).then(function () { PUSHMSG = ''; }, function (e) { PUSHMSG = e.message; });
+    return go.then(function (sb) { if (!sb) return; return pushPost('/sync', { sub: sb.toJSON ? sb.toJSON() : sb, flights: pushFlights(), settings: S.settings, adbKey: adbKey() }); }).then(function () { PUSHMSG = ''; }, function (e) { PUSHMSG = e.message; });
   }
   function pushQueue() { if (!pushEnabled()) return; clearTimeout(pushT); pushT = setTimeout(function () { pushSync(); }, 3000); }
   function b64uBytes(b) { var p = (b + '===').slice(0, b.length + (4 - b.length % 4) % 4), raw = atob(p.replace(/-/g, '+').replace(/_/g, '/')); return Uint8Array.from(raw, function (c) { return c.charCodeAt(0); }); }
   function pushOn() {
     var u = (document.getElementById('pushurl') || {}).value; if (u && u.trim()) lsSet(PK.url, u.trim());
-    if (!pushUrl()) { toast('Push server address needed', 'Paste the address from the setup steps.'); return; }
+    if (!pushUrl()) { toast('Push server address needed', 'Paste the web app address from the setup steps.'); return; }
     var sup = pushSupport(); if (sup) { PUSHMSG = sup; render(); return; }
     Notification.requestPermission().then(function (perm) {
       if (perm !== 'granted') throw new Error('Notifications are blocked. Allow them for WingMan in iPhone Settings, then try again.');
-      return navigator.serviceWorker.ready;
-    }).then(function (reg) {
-      return reg.pushManager.getSubscription().then(function (ex) { return ex || reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64uBytes(VAPID_PUB) }); });
+      return fetch(pushUrl()).then(function (x) { return x.json(); }).then(function (j) { if (!j.publicKey) throw new Error('That address did not answer like the WingMan push server. Check you copied the web app URL.'); return j.publicKey; }, function () { throw new Error('Could not reach the push server. Check the address and that access is set to Anyone.'); });
+    }).then(function (pub) {
+      return navigator.serviceWorker.ready.then(function (reg) { return reg.pushManager.getSubscription().then(function (ex) { return ex ? ex.unsubscribe() : 0; }).then(function () { return reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64uBytes(pub) }); }); });
     }).then(function (sub) { lsSet(PK.on, '1'); return pushSync(sub).then(function () { if (PUSHMSG) throw new Error(PUSHMSG); return pushPost('/test'); }); })
       .then(function () { PUSHMSG = ''; render(); toast('Push alerts are on', 'A test alert is on its way.'); }, function (e) { lsSet(PK.on, ''); PUSHMSG = e.message; render(); toast('Could not turn on alerts', e.message); });
   }
@@ -671,7 +671,7 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
     var on = pushEnabled(), perm = window.Notification ? Notification.permission : 'unsupported';
     return '<div class="card"><span class="label">Push alerts</span>' +
       '<div class="row"><div><div class="t">Alerts on your lock screen</div><div class="d">' + (on ? 'On. Delays, gate changes, cancellations and reminders are sent even when WingMan is closed.' : 'Get delays, gate changes and reminders even when WingMan is closed.') + (perm === 'denied' ? '<br>Notifications are blocked for this app in iPhone Settings.' : '') + '</div>' + (PUSHMSG ? '<div class="d" style="color:var(--bad)">' + esc(PUSHMSG) + '</div>' : '') + '</div><span class="pill ' + (on ? 'ok' : 'warn') + '">' + (on ? 'On' : 'Off') + '</span></div>' +
-      (pushUrl() && on ? '' : '<div class="f" style="margin:4px 0 8px"><input id="pushurl" type="url" inputmode="url" placeholder="Push server address" value="' + esc(pushUrl()) + '" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Push server address"></div>') +
+      (pushUrl() && on ? '' : '<div class="f" style="margin:4px 0 8px"><input id="pushurl" type="url" inputmode="url" placeholder="Apps Script web app address" value="' + esc(pushUrl()) + '" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Apps Script web app address"></div>') +
       '<div class="btns">' + (on ? '<button class="btn primary sm" data-act="pushtest">Send test alert</button><button class="btn sm" data-act="pushoff">Turn off</button>' : '<button class="btn primary sm" data-act="pushon">Turn on push alerts</button>') + '</div></div>';
   }
   function gQueue() {
