@@ -459,6 +459,30 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
 .row > .btns { flex: none; } .pass-route .mid span { white-space: nowrap; }
 .kv dd.mono.nowrap { white-space: nowrap; font-size: 13px; }
 .pcov { container-type: inline-size; }
+
+/* ---- passport data page ---- */
+.dpg { container-type: inline-size; position: relative; border-radius: 14px; overflow: hidden; color: #1D2230; padding: 0 0 12px; border: 1px solid rgba(0,0,0,.14); box-shadow: 0 8px 22px rgba(0,0,0,.2);
+  background: repeating-radial-gradient(circle at 80% 58%, rgba(110,95,150,.07) 0 1.5px, transparent 1.5px 5px), linear-gradient(135deg, #F4F3F7, #ECE8F0 55%, #F2EEEA); }
+.dpg-wave { position: absolute; left: 0; top: 0; width: 100%; height: 64px; pointer-events: none; }
+.dpg-top { position: relative; display: flex; align-items: center; gap: 12px; padding: 14px 16px 0; }
+.dpg-chip { width: 34px; height: 22px; border: 1.6px solid #3A55A5; border-radius: 3px; display: grid; place-items: center; flex: none; }
+.dpg-chip::after { content: ""; width: 9px; height: 9px; border: 1.6px solid #3A55A5; border-radius: 50%; }
+.dpg-top b { font-size: 17px; font-weight: 600; color: #3A55A5; letter-spacing: .03em; text-transform: uppercase; }
+.dpg-body { position: relative; display: grid; grid-template-columns: 31cqw 1fr; gap: 12px; padding: 14px 16px 0; align-items: start; }
+.dpg-lbl { font-size: 17px; color: #596073; letter-spacing: .02em; margin-bottom: 10px; }
+.dpg-photo { aspect-ratio: 3 / 4; width: 100%; border-radius: 4px; background: #CBCDD3; display: grid; place-items: center; overflow: hidden; box-shadow: inset 0 0 0 1px rgba(0,0,0,.15); }
+.dpg-photo img { width: 100%; height: 100%; object-fit: cover; filter: grayscale(1) contrast(1.05); }
+.dpg-photo svg { width: 55%; fill: #9A9EA9; }
+.dpg-f { display: grid; gap: 7px; min-width: 0; }
+.dpg-r { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.dpg-x { min-width: 0; }
+.dpg-x i { display: block; font-style: italic; font-size: 9.5px; color: #7C86B4; line-height: 1.2; }
+.dpg-x b { display: block; font: 500 14px var(--f-mono); letter-spacing: .02em; text-transform: uppercase; overflow-wrap: anywhere; line-height: 1.25; }
+.dpg-x button { all: unset; cursor: pointer; font: 600 11px var(--f-body); color: #3A55A5; margin-left: 6px; padding: 4px 6px; }
+.sens { transition: filter .15s; } .dpg .blur { filter: blur(5px); user-select: none; }
+.dpg-mrz { position: relative; margin: 14px 12px 0; font: 500 3.3cqw/1.5 var(--f-mono); letter-spacing: 0; white-space: pre; overflow: hidden; color: #1D2230; }
+.dpinfo { display: grid; gap: 6px; }
+.sheet-in > .dpg, .sheet-in > .dpinfo, .sheet-in > .btns { flex: none; }
 </style>
 
 <header class="top gut"><div id="top"></div></header>
@@ -484,7 +508,7 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
     LHR: { n: 'London', tz: 'Europe/London', c: 'GB', la: 51.47, lo: -0.45 }, LAX: { n: 'Los Angeles', tz: 'America/Los_Angeles', c: 'US', la: 33.94, lo: -118.41 },
     JFK: { n: 'New York', tz: 'America/New_York', c: 'US', la: 40.64, lo: -73.78 }, AKL: { n: 'Auckland', tz: 'Pacific/Auckland', c: 'NZ', la: -37.01, lo: 174.79 }
   };
-  var CN = { AU: 'Australia', SG: 'Singapore', IN: 'India', AE: 'United Arab Emirates', QA: 'Qatar', MY: 'Malaysia', TH: 'Thailand', HK: 'Hong Kong', GB: 'United Kingdom', US: 'United States', NZ: 'New Zealand' };
+  var CN = { AU: 'Australia', SG: 'Singapore', IN: 'India', AE: 'United Arab Emirates', QA: 'Qatar', MY: 'Malaysia', TH: 'Thailand', HK: 'Hong Kong', GB: 'United Kingdom', US: 'United States', NZ: 'New Zealand', CA: 'Canada', JP: 'Japan', KR: 'South Korea', CN: 'China', ID: 'Indonesia', PH: 'Philippines', VN: 'Vietnam', LK: 'Sri Lanka', PK: 'Pakistan', BD: 'Bangladesh', NP: 'Nepal', FJ: 'Fiji', ZA: 'South Africa', IE: 'Ireland', FR: 'France', DE: 'Germany', IT: 'Italy', ES: 'Spain', NL: 'Netherlands' };
   var KEY = 'flight-deck-proto-v2';
   var PLANE = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 16v-2l-8-5V3.5a1.5 1.5 0 0 0-3 0V9l-8 5v2l8-2.5V19l-2 1.5V22l3.5-1 3.5 1v-1.5L13 19v-5.5z"/></svg>';
   var MY_TZ = 'Australia/Sydney';
@@ -975,11 +999,74 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
     return '<button type="button" class="pcov" data-ppen="' + esc(p.id) + '" aria-label="' + esc(p.holder) + ', ' + esc(nm) + ' passport. ' + esc(st[0]) + '" style="--pc:' + (PCOL[p.country] || ('hsl(' + (hsh(p.country) % 360) + ',45%,20%)')) + ';--dot:' + (st[1] === 'bad' ? '#FF7A6B' : st[1] === 'warn' ? '#FFC24D' : '#6FD99B') + '">' +
       '<span class="pc-x"></span>' + GLOBE + '<span class="pc-c" style="font-size:min(19px, ' + (82 / fs).toFixed(2) + 'cqw)">' + esc(nm) + '</span><span class="pc-p">PASSPORT</span><span class="pc-chip"></span><span class="pc-n">' + esc(p.holder) + '</span></button>';
   }
+  var ISO3 = { AU: 'AUS', SG: 'SGP', IN: 'IND', AE: 'ARE', QA: 'QAT', MY: 'MYS', TH: 'THA', HK: 'HKG', GB: 'GBR', US: 'USA', NZ: 'NZL', CA: 'CAN', JP: 'JPN', KR: 'KOR', CN: 'CHN', ID: 'IDN', PH: 'PHL', VN: 'VNM', LK: 'LKA', PK: 'PAK', BD: 'BGD', NP: 'NPL', FJ: 'FJI', ZA: 'ZAF', IE: 'IRL', FR: 'FRA', DE: 'DEU', IT: 'ITA', ES: 'ESP', NL: 'NLD' };
+  var DEM = { AU: 'Australian', SG: 'Singaporean', IN: 'Indian', AE: 'Emirati', QA: 'Qatari', MY: 'Malaysian', TH: 'Thai', HK: 'Hong Kong', GB: 'British', US: 'American', NZ: 'New Zealander', CA: 'Canadian', JP: 'Japanese', KR: 'South Korean', CN: 'Chinese', ID: 'Indonesian', PH: 'Filipino', VN: 'Vietnamese', LK: 'Sri Lankan', PK: 'Pakistani', BD: 'Bangladeshi', NP: 'Nepalese', FJ: 'Fijian', ZA: 'South African', IE: 'Irish', FR: 'French', DE: 'German', IT: 'Italian', ES: 'Spanish', NL: 'Dutch' };
+  function nameParts(p) {
+    if (p.family || p.given) return { family: p.family || '', given: p.given || '' };
+    var t = String(p.holder || '').trim().split(/\s+/); return t.length > 1 ? { family: t[t.length - 1], given: t.slice(0, -1).join(' ') } : { family: t[0] || '', given: '' };
+  }
+  function mrzChk(str) { var w = [7, 3, 1], n = 0; for (var i = 0; i < str.length; i++) { var c = str.charAt(i), v = c === '<' ? 0 : /\d/.test(c) ? +c : c.charCodeAt(0) - 55; n += v * w[i % 3]; } return String(n % 10); }
+  function mrz(p) {
+    var iso = ISO3[p.country]; if (!iso || !p.dob || !p.exp || !p.num) return null;
+    var nm = nameParts(p), clean = function (x) { return String(x).toUpperCase().replace(/[^A-Z]+/g, '<'); };
+    var l1 = ('P<' + iso + clean(nm.family) + '<<' + clean(nm.given)).replace(/<+$/, ''); l1 = (l1 + new Array(45).join('<')).slice(0, 44);
+    var yymmdd = function (d) { return d.slice(2, 4) + d.slice(5, 7) + d.slice(8, 10); }, doc = (String(p.num).toUpperCase().replace(/[^A-Z0-9]/g, '') + '<<<<<<<<<').slice(0, 9), dob = yymmdd(p.dob), ex = yymmdd(p.exp), sx = p.sex === 'M' || p.sex === 'F' ? p.sex : '<', per = '<<<<<<<<<<<<<<';
+    var core = doc + mrzChk(doc) + iso + dob + mrzChk(dob) + sx + ex + mrzChk(ex) + per + '0';
+    var l2 = core + mrzChk(core.slice(0, 10) + core.slice(13, 20) + core.slice(21, 43)); return [l1, l2];
+  }
+  function dpDate(s) { return s ? new Intl.DateTimeFormat('en-GB', { timeZone: 'UTC', day: '2-digit', month: 'short', year: 'numeric' }).format(Date.parse(s + 'T00:00:00Z')).toUpperCase() : '—'; }
+  var SIL = '<svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8" r="4.2"/><path d="M3.5 21c.6-4.6 4-7 8.5-7s7.9 2.4 8.5 7z"/></svg>';
+  function dataPage(p) {
+    var shown = revealed[p.id], nm = nameParts(p), iso = ISO3[p.country] || p.country, mz = mrz(p), dv = function (v) { return v ? esc(v) : '—'; };
+    function x(lbl, val, cls) { return '<div class="dpg-x"><i>' + lbl + '</i><b' + (cls ? ' class="' + cls + '"' : '') + '>' + val + '</b></div>'; }
+    return '<div class="dpg"><svg class="dpg-wave" viewBox="0 0 360 64" preserveAspectRatio="none" aria-hidden="true"><path d="M0 0h360v6C300 4 250 20 200 30 150 40 100 44 60 56 36 62 14 64 0 64z" fill="#B7B3EE" opacity=".55"/></svg>' +
+      '<div class="dpg-top"><span class="dpg-chip"></span><b>' + esc(CN[p.country] || p.country) + '</b></div>' +
+      '<div class="dpg-body"><div><div class="dpg-lbl">PASSPORT</div><div class="dpg-photo">' + (p.photo ? '<img alt="" src="' + p.photo + '">' : SIL) + '</div></div><div class="dpg-f">' +
+      '<div class="dpg-r">' + x('Type / Type', 'P') + x('Code of issuing state / Code de l’État émetteur', esc(iso)) + '</div>' +
+      x('Document No. / Nº du document', '<span class="sens' + (shown ? '' : ' blur') + '">' + esc(p.num) + '</span><button type="button" data-reveal="' + esc(p.id) + '">' + (shown ? 'Hide' : 'Show') + '</button>') +
+      x('Family name / Nom', dv(nm.family)) + x('Given names / Prénoms', dv(nm.given)) + x('Nationality / Nationalité', esc(p.nat || DEM[p.country] || CN[p.country] || p.country)) +
+      '<div class="dpg-r">' + x('Date of birth / Date de naissance', dpDate(p.dob)) + x('Sex / Sexe', dv(p.sex)) + '</div>' +
+      x('Place of birth / Lieu de naissance', dv(p.pob)) +
+      '<div class="dpg-r">' + x('Date of issue / Date de délivrance', dpDate(p.issued)) + x('Date of expiry / Date d’expiration', dpDate(p.exp)) + '</div>' +
+      x('Authority / Autorité', esc(p.auth || (CN[p.country] || p.country))) + '</div></div>' +
+      (mz ? '<div class="dpg-mrz sens' + (shown ? '' : ' blur') + '" aria-label="Machine readable zone">' + (mz[0] + '\n' + mz[1]).replace(/</g, '&lt;') + '</div>' : '') + '</div>';
+  }
+  function passportSheet(p) {
+    var st = pstate(p), fl = flagText(p);
+    return '<div class="sheet-bar gut"><div class="sheet-top"><button class="btn sm" data-act="back">Back</button><span class="pill ' + st[1] + '">' + st[0] + '</span></div></div><div class="sheet-scroll gut"><div class="sheet-in">' + dataPage(p) +
+      '<div class="card dpinfo"><span class="label">Validity</span><div class="row" style="border-top:0;padding-top:0"><div><div class="t">' + esc(pleft(p)) + '</div><div class="d">Expires ' + pdate(p.exp) + '</div></div></div>' + (fl ? '<div class="d" style="color:var(--warn)">' + esc(fl) + '</div>' : '') + (p.notes ? '<div class="d">' + esc(p.notes) + '</div>' : '') + '</div>' +
+      '<div class="btns"><button class="btn" data-ppedit="' + esc(p.id) + '">Edit details</button><button class="btn danger" data-pdel="' + esc(p.id) + '">Delete</button></div></div></div>';
+  }
+  function openPassportEdit(id) {
+    var p = S.passports.filter(function (x) { return x.id === id; })[0]; if (!p) return; var nm = nameParts(p), photo = p.photo || '';
+    var sh = document.getElementById('sheet'); detail = '__pp:' + id;
+    sh.innerHTML = '<div class="sheet-bar gut"><div class="sheet-top"><button class="btn sm" type="button" data-ppen="' + esc(id) + '">Cancel</button></div></div><div class="sheet-scroll gut"><div class="sheet-in"><form id="ppForm" novalidate><fieldset><legend>Passport page details</legend>' +
+      '<div class="f full"><label for="pgiven">Given names</label><input id="pgiven" value="' + esc(nm.given) + '" autocomplete="off"></div>' +
+      '<div class="f full"><label for="pfam">Family name</label><input id="pfam" value="' + esc(nm.family) + '" autocomplete="off"></div>' +
+      '<div class="f"><label for="pdob">Date of birth</label><input id="pdob" type="date" value="' + esc(p.dob || '') + '"></div>' +
+      '<div class="f"><label for="psex">Sex</label><select id="psex"><option value="">-</option><option value="M"' + (p.sex === 'M' ? ' selected' : '') + '>M</option><option value="F"' + (p.sex === 'F' ? ' selected' : '') + '>F</option><option value="X"' + (p.sex === 'X' ? ' selected' : '') + '>X</option></select></div>' +
+      '<div class="f full"><label for="ppob">Place of birth</label><input id="ppob" value="' + esc(p.pob || '') + '" autocomplete="off"></div>' +
+      '<div class="f full"><label for="pnat">Nationality</label><input id="pnat" value="' + esc(p.nat || DEM[p.country] || '') + '" autocomplete="off"></div>' +
+      '<div class="f full"><label for="pauth">Issuing authority</label><input id="pauth" value="' + esc(p.auth || '') + '" placeholder="' + esc((CN[p.country] || '').toUpperCase()) + '" autocomplete="off"></div>' +
+      '<div class="f full"><label for="pphoto">Photo (optional, stays on this phone and your Google Sheet)</label><input id="pphoto" type="file" accept="image/*"><div class="dpg-photo" id="pprev" style="width:90px;margin-top:8px">' + (photo ? '<img alt="" src="' + photo + '">' : SIL) + '</div>' + (photo ? '<button type="button" class="btn sm" id="pphoto-x" style="margin-top:8px">Remove photo</button>' : '') + '</div></fieldset>' +
+      '<div class="btns"><button class="btn primary" type="submit">Save</button></div></form></div></div>';
+    sh.hidden = false;
+    var inp = sh.querySelector('#pphoto');
+    inp.addEventListener('change', function () {
+      var f = inp.files && inp.files[0]; if (!f) return; var fr = new FileReader();
+      fr.onload = function () { var im = new Image(); im.onload = function () { var H = 260, sc = Math.min(1, H / im.height), c = document.createElement('canvas'); c.width = Math.round(im.width * sc); c.height = Math.round(im.height * sc); c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); photo = c.toDataURL('image/jpeg', .72); sh.querySelector('#pprev').innerHTML = '<img alt="" src="' + photo + '">'; }; im.src = fr.result; };
+      fr.readAsDataURL(f);
+    });
+    var rx = sh.querySelector('#pphoto-x'); if (rx) rx.addEventListener('click', function () { photo = ''; sh.querySelector('#pprev').innerHTML = SIL; rx.remove(); });
+    sh.querySelector('#ppForm').addEventListener('submit', function (ev) {
+      ev.preventDefault(); var g = function (i) { return (sh.querySelector('#' + i).value || '').trim(); };
+      p.given = g('pgiven'); p.family = g('pfam'); p.dob = g('pdob'); p.sex = g('psex'); p.pob = g('ppob'); p.nat = g('pnat'); p.auth = g('pauth'); p.photo = photo;
+      save(); openPassport(id); toast('Passport details saved');
+    });
+  }
   function openPassport(id) {
     var p = S.passports.filter(function (x) { return x.id === id; })[0]; if (!p) return;
-    detail = '__pp:' + id; var sh = document.getElementById('sheet');
-    sh.innerHTML = '<div class="sheet-bar gut"><div class="sheet-top"><button class="btn sm" data-act="back">Back</button><span class="pill ' + pstate(p)[1] + '">' + pstate(p)[0] + '</span></div></div><div class="sheet-scroll gut"><div class="sheet-in">' + passportCard(p) + '</div></div>';
-    sh.hidden = false;
+    detail = '__pp:' + id; var sh = document.getElementById('sheet'); sh.innerHTML = passportSheet(p); sh.hidden = false;
   }
   function passportsBody() {
     var h = '', ps = S.passports.slice().sort(function (a, b) { return pdays(a) - pdays(b); });
@@ -1660,7 +1747,7 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
 
   /* ---------- actions ---------- */
   document.addEventListener('click', function (e) {
-    var el = e.target.closest('[data-go],[data-open],[data-act],[data-del],[data-copy],[data-fab],[data-reveal],[data-ppen],[data-pdel],[data-tsub],[data-lsub],[data-live],[data-lview],[data-mapwx],[data-track],[data-untrack],[data-save],[data-hint],[data-sdate],[data-addfor],[data-addpax],[data-addcat],[data-addmode],[data-fdel]');
+    var el = e.target.closest('[data-go],[data-open],[data-act],[data-del],[data-copy],[data-fab],[data-reveal],[data-ppen],[data-ppedit],[data-pdel],[data-tsub],[data-lsub],[data-live],[data-lview],[data-mapwx],[data-track],[data-untrack],[data-save],[data-hint],[data-sdate],[data-addfor],[data-addpax],[data-addcat],[data-addmode],[data-fdel]');
     if (!el) return;
     if (el.hasAttribute('data-fab')) { addWho = ''; if (fabTarget() === 'add') { addMode = ''; searchQ = ''; rFrom = ''; rTo = ''; } go(fabTarget()); return; }
     if (el.hasAttribute('data-mapwx')) { mapWx = !mapWx; render(); return; }
@@ -1681,6 +1768,7 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
     if (el.hasAttribute('data-go')) { go(el.getAttribute('data-go')); return; }
     if (el.hasAttribute('data-open')) { e.preventDefault(); openDetail(el.getAttribute('data-open')); return; }
     if (el.hasAttribute('data-ppen')) { openPassport(el.getAttribute('data-ppen')); return; }
+    if (el.hasAttribute('data-ppedit')) { openPassportEdit(el.getAttribute('data-ppedit')); return; }
     if (el.hasAttribute('data-reveal')) { var rid = el.getAttribute('data-reveal'); revealed[rid] = !revealed[rid]; if (String(detail).indexOf('__pp:') === 0) openPassport(detail.slice(5)); else render(); return; }
     if (el.hasAttribute('data-pdel')) {
       if (el.getAttribute('data-armed')) { var pid = el.getAttribute('data-pdel'); S.passports = S.passports.filter(function (x) { return x.id !== pid; }); save(); if (String(detail).indexOf('__pp:') === 0) closeDetail(); else render(); toast('Passport deleted'); }
