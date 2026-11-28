@@ -490,40 +490,11 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
 
   /* ---------- state ---------- */
   function seed() {
-    var id = 0;
-    function F(o) { o.id = 'f' + (++id); o.delay = o.delay || 0; o.pax = o.pax || ['Surendra Madala']; return o; }
-    var HYD2 = ['Surendra Madala', 'Family member 1'];
-    var flights = [
-      F({ trip: 'Brisbane weekend', airline: 'Qantas', no: 'QF520', from: 'SYD', to: 'BNE', dep: L(ymd(1) + ' 07:10', AP.SYD.tz), arr: L(ymd(1) + ' 07:45', AP.BNE.tz), ref: 'K4M7QP', ticket: '081 2294 117 650', seat: '14C', terminal: 'T3', gate: 'B14', delay: 35, notes: 'Hotel pickup booked for 08:30.' }),
-      F({ trip: 'Brisbane weekend', airline: 'Qantas', no: 'QF523', from: 'BNE', to: 'SYD', dep: L(ymd(3) + ' 18:30', AP.BNE.tz), arr: L(ymd(3) + ' 20:55', AP.SYD.tz), ref: 'K4M7QP', ticket: '081 2294 117 651', seat: '9A', terminal: 'D', gate: '' }),
-      F({ trip: 'Hyderabad visit', airline: 'Singapore Airlines', no: 'SQ232', from: 'SYD', to: 'SIN', dep: L(ymd(15) + ' 09:25', AP.SYD.tz), arr: L(ymd(15) + ' 14:55', AP.SIN.tz), ref: 'X7R2LD', ticket: '618 4410 223 908', seat: '38A', terminal: 'T1', gate: '', pax: HYD2, notes: 'Checked bag: 30 kg allowance. KrisFlyer number on file.' }),
-      F({ trip: 'Hyderabad visit', airline: 'Singapore Airlines', no: 'SQ528', from: 'SIN', to: 'HYD', dep: L(ymd(15) + ' 17:35', AP.SIN.tz), arr: L(ymd(15) + ' 19:20', AP.HYD.tz), ref: 'X7R2LD', ticket: '618 4410 223 909', seat: '41K', terminal: 'T3', gate: '', pax: HYD2, notes: '2h 40m layover at Changi.' }),
-      F({ trip: 'Hyderabad visit', airline: 'Singapore Airlines', no: 'SQ529', from: 'HYD', to: 'SIN', dep: L(ymd(44) + ' 21:45', AP.HYD.tz), arr: L(ymd(45) + ' 04:55', AP.SIN.tz), ref: 'X7R2LD', ticket: '618 4410 223 910', seat: '40A', terminal: '', gate: '', pax: HYD2 }),
-      F({ trip: 'Hyderabad visit', airline: 'Singapore Airlines', no: 'SQ231', from: 'SIN', to: 'SYD', dep: L(ymd(45) + ' 08:40', AP.SIN.tz), arr: L(ymd(45) + ' 19:30', AP.SYD.tz), ref: 'X7R2LD', ticket: '618 4410 223 911', seat: '38A', terminal: 'T3', gate: '', pax: HYD2 }),
-      F({ trip: 'Melbourne work trip', airline: 'Qantas', no: 'QF401', from: 'SYD', to: 'MEL', dep: L(ymd(-262) + ' 06:30', AP.SYD.tz), arr: L(ymd(-262) + ' 08:05', AP.MEL.tz), ref: 'M3W9TZ', ticket: '081 2201 554 310', seat: '7D', terminal: 'T3', gate: 'A9' }),
-      F({ trip: 'Melbourne work trip', airline: 'Qantas', no: 'QF444', from: 'MEL', to: 'SYD', dep: L(ymd(-260) + ' 18:15', AP.MEL.tz), arr: L(ymd(-260) + ' 19:50', AP.SYD.tz), ref: 'M3W9TZ', ticket: '081 2201 554 311', seat: '8F', terminal: 'T4', gate: 'C2' }),
-      F({ trip: 'Hyderabad family trip', airline: 'Singapore Airlines', no: 'SQ232', from: 'SYD', to: 'SIN', dep: L(ymd(-340) + ' 09:25', AP.SYD.tz), arr: L(ymd(-340) + ' 14:55', AP.SIN.tz), ref: 'T8N4CV', ticket: '618 3900 118 440', seat: '37A', terminal: 'T1', gate: 'D6', pax: HYD2 }),
-      F({ trip: 'Hyderabad family trip', airline: 'Singapore Airlines', no: 'SQ528', from: 'SIN', to: 'HYD', dep: L(ymd(-340) + ' 17:35', AP.SIN.tz), arr: L(ymd(-340) + ' 19:20', AP.HYD.tz), ref: 'T8N4CV', ticket: '618 3900 118 441', seat: '40K', terminal: 'T3', gate: 'B22', pax: HYD2 }),
-      F({ trip: 'Hyderabad family trip', airline: 'Singapore Airlines', no: 'SQ529', from: 'HYD', to: 'SIN', dep: L(ymd(-312) + ' 21:45', AP.HYD.tz), arr: L(ymd(-311) + ' 04:55', AP.SIN.tz), ref: 'T8N4CV', ticket: '618 3900 118 442', seat: '39A', gate: '12', pax: HYD2 }),
-      F({ trip: 'Hyderabad family trip', airline: 'Singapore Airlines', no: 'SQ231', from: 'SIN', to: 'SYD', dep: L(ymd(-311) + ' 08:40', AP.SIN.tz), arr: L(ymd(-311) + ' 19:30', AP.SYD.tz), ref: 'T8N4CV', ticket: '618 3900 118 443', seat: '37A', terminal: 'T3', gate: 'C14', pax: HYD2 })
-    ];
-    var now = Date.now();
-    var alerts = [
-      { id: 'a1', fid: 'f1', type: 'delay', title: 'QF520 delayed 35 min', body: 'New departure 07:45 from Sydney. Gate B14, Terminal T3.', at: now - 20 * 60000, unread: true },
-      { id: 'a2', fid: 'f1', type: 'gate', title: 'Gate change for QF520', body: 'Gate B12 is now B14.', at: now - 95 * 60000, unread: true },
-      { id: 'a3', fid: 'f1', type: 'checkin', title: 'Check-in is open for QF520', body: 'Sydney to Brisbane. Booking ref K4M7QP.', at: now - 14 * 3600000, unread: false }
-    ];
-    var passports = [
-      { id: 'p1', holder: 'Surendra Madala', country: 'AU', num: 'PA0000001', issued: ymd(-900), exp: ymd(2900), notes: 'Sample entry' },
-      { id: 'p2', holder: 'Family member 1', country: 'IN', num: 'K0000002', issued: ymd(-3200), exp: ymd(120), notes: 'Sample entry. Renewal needs a few weeks.' },
-      { id: 'p3', holder: 'Family member 2', country: 'AU', num: 'PA0000003', issued: ymd(-400), exp: ymd(1400), notes: 'Sample entry' }
-    ];
-    var travellers = [{ id: 't1', name: 'Surendra Madala', rel: 'Me' }, { id: 't2', name: 'Family member 1', rel: 'Family' }, { id: 't3', name: 'Family member 2', rel: 'Family' }];
-    return { sample: true, flights: flights, alerts: alerts, passports: passports, travellers: travellers, tracked: [], nextId: 40, settings: { push: true, checkin: true, leave: true, delay: true, gate: true, boarding: true, checkinHrs: 24, leaveMins: 150 } };
+    return { sample: false, flights: [], alerts: [], passports: [], travellers: [], tracked: [], nextId: 40, rev: 0, settings: { push: true, checkin: true, leave: true, delay: true, gate: true, boarding: true, checkinHrs: 24, leaveMins: 150 } };
   }
   var S;
   try { S = JSON.parse(localStorage.getItem(KEY)); } catch (e) { S = null; }
-  if (!S || !S.flights || !S.passports) S = seed();
+  if (!S || !S.flights || !S.passports || S.sample) S = seed();
   if (!S.tracked) S.tracked = [];
   if (!S.travellers) { S.travellers = []; S.passports.forEach(function (p) { if (!S.travellers.some(function (t) { return t.name === p.holder; })) S.travellers.push({ id: 't' + S.travellers.length, name: p.holder, rel: '' }); }); }
   function regSaved() { Object.keys((S && S.airports) || {}).forEach(function (c) { if (!AP[c]) AP[c] = S.airports[c]; }); }
@@ -652,14 +623,18 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
 
   /* ---------- derived: flights ---------- */
   function effDep(f) { return f.dep + f.delay * 60000; }
-  function effArr(f) { return f.arr + f.delay * 60000; }
+  function effArr(f) { return f.arr + (f.adelay != null ? f.adelay : f.delay) * 60000; }
   function isIntl(f) { return AP[f.from].c !== AP[f.to].c; }
   function status(f) {
     var n = Date.now();
     if (f.cancelled) return ['Cancelled', 'bad'];
+    if (/divert/i.test(f.st || '')) return ['Diverted', 'bad'];
     if (n > effArr(f)) return ['Landed', 'idle'];
     if (n > effDep(f)) return ['In the air', 'ok'];
+    if (/gateclosed/i.test(f.st || '')) return ['Gate closed', 'warn'];
+    if (/boarding/i.test(f.st || '')) return ['Boarding', 'ok'];
     if (f.delay >= 15) return ['Delayed ' + f.delay + 'm', 'warn'];
+    if (!f.chk) return ['Scheduled', 'idle'];
     if (effDep(f) - n < 45 * 60000) return ['Boarding soon', 'ok'];
     return ['On time', 'ok'];
   }
@@ -921,9 +896,7 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
     return head('Traveller') + segTwo('Traveller sections', 'tsub', ['journey', 'My Journey'], ['passports', 'Passports'], tsub, att) + (tsub === 'passports' ? passportsBody() : journeyBody());
   }
 
-  /* ---------- live status (simulated) and weather (live forecast) ---------- */
-  var WXG = { tropical: ['Partly cloudy', 'Showers', 'Thunderstorms', 'Cloudy'], dry: ['Clear', 'Partly cloudy', 'Haze', 'Clear'], mild: ['Partly cloudy', 'Cloudy', 'Showers', 'Clear'], cold: ['Cloudy', 'Showers', 'Clear', 'Fog'] };
-  var WXB = { SYD: [25, 'mild'], MEL: [22, 'mild'], BNE: [28, 'tropical'], PER: [29, 'dry'], ADL: [26, 'dry'], CBR: [25, 'dry'], OOL: [27, 'tropical'], SIN: [30, 'tropical'], HYD: [29, 'dry'], BLR: [27, 'mild'], DEL: [24, 'dry'], MAA: [29, 'tropical'], BOM: [31, 'tropical'], DXB: [29, 'dry'], DOH: [27, 'dry'], KUL: [31, 'tropical'], BKK: [33, 'tropical'], HKG: [23, 'mild'], LHR: [8, 'cold'], LAX: [20, 'dry'], JFK: [6, 'cold'], AKL: [19, 'mild'] };
+  /* ---------- live status and weather (live forecast) ---------- */
   var WXI = {
     'Clear': '<circle cx="12" cy="12" r="4"/><path d="M12 2.5v2.5M12 19v2.5M2.5 12H5M19 12h2.5M5.3 5.3l1.8 1.8M16.9 16.9l1.8 1.8M5.3 18.7l1.8-1.8M16.9 7.1l1.8-1.8"/>',
     'Partly cloudy': '<circle cx="8" cy="8" r="2.6"/><path d="M8 2.5v1.5M2.5 8H4M4.1 4.1l1 1M11.9 4.1l-1 1"/><path d="M8 20a3.6 3.6 0 0 1-.4-7.2 5 5 0 0 1 9.6 1A3.1 3.1 0 0 1 17 20z"/>',
@@ -934,7 +907,7 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
     'Fog': '<path d="M4 8h16M4 12h16M6 16h12M9 20h6"/>'
   };
   function hsh(s) { var x = 0; for (var i = 0; i < s.length; i++) x = (x * 31 + s.charCodeAt(i)) >>> 0; return x; }
-  /* Live forecast from Open-Meteo (free, no key). Falls back to typical conditions when a forecast is not available. */
+  /* Live forecast from Open-Meteo (free, no key). Shows nothing when a forecast is not available. */
   var WXL = {}, WXP = {};
   function wmo(c) { return c === 0 ? 'Clear' : c <= 2 ? 'Partly cloudy' : c === 3 ? 'Cloudy' : c === 45 || c === 48 ? 'Fog' : c >= 95 ? 'Thunderstorms' : (c >= 51 && c <= 67) || (c >= 80 && c <= 82) ? 'Showers' : 'Cloudy'; }
   function wxFetch(code) {
@@ -952,11 +925,7 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
     var c = wmo(h.weather_code[i]), vis = h.visibility[i] == null ? 10 : Math.min(10, Math.round(h.visibility[i] / 100) / 10);
     return { t: Math.round(h.temperature_2m[i]), c: c, w: Math.round(h.wind_speed_10m[i] || 0), hu: Math.round(h.relative_humidity_2m[i] || 0), v: vis, live: true };
   }
-  function wx(code, ts) {
-    wxFetch(code); var lv = wxLive(code, ts); if (lv) return lv;
-    var b = WXB[code] || [24, 'mild'], hr = +tf(ts, AP[code].tz).slice(0, 2), h = hsh(code + Math.floor(ts / 10800000)), g = WXG[b[1]], cond = g[h % g.length];
-    return { t: Math.round(b[0] + 4 * Math.sin(2 * Math.PI * (hr - 9) / 24) + (h % 5) - 2), c: cond, w: 8 + (h >>> 3) % 24, hu: b[1] === 'tropical' ? 70 + h % 20 : 40 + h % 30, v: cond === 'Fog' ? 1.5 : cond === 'Haze' ? 6 : cond === 'Thunderstorms' ? 7 : cond === 'Showers' ? 8 : 10 };
-  }
+  function wx(code, ts) { wxFetch(code); return wxLive(code, ts); }
   function wxRisk(x) {
     if (x.c === 'Thunderstorms') return ['warn', 'Storms may cause delays'];
     if (x.c === 'Fog' || x.v < 3) return ['warn', 'Low visibility may cause delays'];
@@ -964,9 +933,10 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
     return ['ok', 'No weather delays expected'];
   }
   function wxCard(code, ts, label) {
-    var x = wx(code, ts), r = wxRisk(x);
-    return '<div class="card tight"><div class="sechead"><span class="label">' + AP[code].n + ' &middot; ' + code + '</span><span class="label">' + label + '</span></div>' +
-      '<div class="note" style="margin:-2px 0 6px">' + (x.live ? 'Live forecast' : (WXP[code] ? 'Loading forecast&hellip;' : 'Typical conditions (forecast not available for this date)')) + '</div>' +
+    var x = wx(code, ts), head = '<div class="card tight"><div class="sechead"><span class="label">' + esc(AP[code].n) + ' &middot; ' + code + '</span><span class="label">' + label + '</span></div>';
+    if (!x) return head + '<div class="note" style="margin:0">' + (WXP[code] ? 'Loading forecast&hellip;' : (WXL[code] && !WXL[code].h ? 'Could not load the forecast. Check your connection.' : 'No forecast yet for this time. Forecasts cover about 16 days ahead.')) + '</div></div>';
+    var r = wxRisk(x);
+    return head + '<div class="note" style="margin:-2px 0 6px">Live forecast</div>' +
       '<div class="wx"><span class="wxi"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + WXI[x.c] + '</svg></span><div class="temp">' + x.t + '&deg;C</div>' +
       '<div class="wxc"><div>' + x.c + '</div><div class="wxm"><span>Wind <b>' + x.w + ' km/h</b></span><span>Humidity <b>' + x.hu + '%</b></span><span>Visibility <b>' + x.v + ' km</b></span></div></div></div>' +
       '<span class="pill ' + r[0] + '" style="align-self:flex-start">' + r[1] + '</span></div>';
@@ -974,14 +944,20 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
   function tcell(lbl, sched, est, tz, extra, cls) {
     return '<div class="' + (cls || '') + '"><div class="label">' + lbl + '</div><div class="big">' + tf(est, tz) + '</div>' + (est !== sched ? '<div class="was">' + tf(sched, tz) + '</div>' : '') + '<div class="note">' + df(est, tz) + ' &middot; ' + extra + '</div></div>';
   }
+  var POLLERR = '';
+  function liveRow(f) {
+    var chk = f.chk ? 'Checked ' + tf(f.chk, MY_TZ) + ' &middot; live data' : (adbKey() ? 'Not checked yet' : 'Add your live data key in Settings for real status');
+    var t = !f.chk ? 'Status not checked yet' : f.cancelled ? 'Cancelled by the airline' : f.delay >= 5 ? 'Delayed ' + f.delay + ' min' : f.delay <= -5 ? 'Early by ' + (-f.delay) + ' min' : 'On schedule';
+    return '<div class="row"><div><div class="t">' + t + '</div><div class="d">' + chk + '</div>' + (POLLERR ? '<div class="d" style="color:var(--bad)">' + esc(POLLERR) + '</div>' : '') + '</div><div class="btns"><button class="btn sm" data-act="refresh" data-id="' + esc(f.id) + '">Refresh</button></div></div>';
+  }
   function liveDetailsBody(f, nx) {
     var a = AP[f.from], b = AP[f.to], s = status(f), n = Date.now(), d = effDep(f), ar = effArr(f), air = n > d, p = Math.max(0, Math.min(1, (n - d) / (ar - d))), pc = Math.round(p * 100);
     var h = '<section class="card tight"><div class="sechead"><span class="label">' + esc(f.airline || 'Flight') + ' &middot; ' + esc(f.no) + '</span><span style="display:flex;gap:8px;align-items:center"><span class="pill ' + s[1] + '">' + s[0] + '</span><button class="btn sm" data-lview="map">Map</button></span></div>' +
       '<div class="lrow"><div><span class="label">' + (air ? 'Lands in' : 'Departs in') + '</span><div class="cd" data-cd="' + (air ? ar : d) + '" data-mode="big" data-past="' + (air ? 'Landed' : 'Departed') + '"></div></div>' +
       '<div class="lnote">' + dur(f.dep, f.arr) + ' flight<br>' + Math.round(km(f) / 10) * 10 + ' km' + (air ? '<br>' + pc + '% complete' : '') + '</div></div>' +
       '<div class="tkrow"><span class="code">' + f.from + '</span><div class="tk" role="img" aria-label="' + pc + ' percent of the flight completed"><i style="width:calc(' + p + ' * (100% - 24px) + 12px)"></i><span class="plane" style="left:calc(12px + ' + p + ' * (100% - 24px))">' + PLANE + '</span></div><span class="code">' + f.to + '</span></div>' +
-      '<div class="times">' + tcell('Departure', f.dep, d, a.tz, 'T' + esc((f.terminal || '-').replace(/^T/i, '')) + ' &middot; Gate ' + esc(f.gate || 'TBA')) + tcell('Arrival', f.arr, ar, b.tz, 'Gate TBA', 'r') + '</div>' +
-      '<div class="row"><div><div class="t">' + (f.delay ? 'Delayed ' + f.delay + ' min' : 'On schedule') + '</div><div class="d">Checked ' + tf(lastChecked, MY_TZ) + ' &middot; simulated</div></div><div class="btns"><button class="btn sm" data-act="refresh">Refresh</button><button class="btn sm" data-sim="' + f.id + '">Simulate</button></div></div></section>';
+      '<div class="times">' + tcell('Departure', f.dep, d, a.tz, 'T' + esc((f.terminal || '-').replace(/^T/i, '')) + ' &middot; Gate ' + esc(f.gate || 'TBA')) + tcell('Arrival', f.arr, ar, b.tz, (f.aterm ? 'T' + esc(String(f.aterm).replace(/^T/i, '')) + ' &middot; ' : '') + 'Gate ' + esc(f.agate || 'TBA'), 'r') + '</div>' +
+      liveRow(f) + '</section>';
     if (nx) {
       var lay = effDep(nx) - ar, tight = lay < 60 * 60000;
       h += '<section class="card tight"><div class="sechead"><span class="label">Connection at ' + AP[nx.from].n + '</span><span class="pill ' + (tight ? 'warn' : 'ok') + '">' + (tight ? 'Tight' : 'Comfortable') + '</span></div>' +
@@ -994,7 +970,7 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
     var h = wxCard(f.from, n < d ? d : n, n < d ? 'At departure ' + tf(d, a.tz) : 'Now');
     if (nx) h += wxCard(f.to, ar, 'Connection, lands ' + tf(ar, b.tz));
     else h += wxCard(f.to, ar, 'At arrival ' + tf(ar, b.tz));
-    return h + '<p class="note">Forecast from Open-Meteo for the hour you depart and land. Forecasts cover about 16 days ahead; later dates show typical conditions.</p>';
+    return h + '<p class="note">Forecast from Open-Meteo for the hour you depart and land. Forecasts cover about 16 days ahead.</p>';
   }
   function liveView() {
     var up = liveList(), h = head('Live Status');
@@ -1008,25 +984,9 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
     return h + (lsub === 'weather' ? liveWeatherBody(f, nx) : liveFlightsBody(f, nx));
   }
 
-  /* ---------- tracked flights, search and map (simulated schedules) ---------- */
+  /* ---------- tracked flights, search and map ---------- */
   var AIRLINES = { QF: 'Qantas', VA: 'Virgin Australia', JQ: 'Jetstar', SQ: 'Singapore Airlines', AI: 'Air India', EK: 'Emirates', QR: 'Qatar Airways', MH: 'Malaysia Airlines', TG: 'Thai Airways', CX: 'Cathay Pacific', NZ: 'Air New Zealand' };
   var ALIAS = { QF: ['qantas'], VA: ['virgin australia', 'virgin'], JQ: ['jetstar'], SQ: ['singapore airlines', 'singapore air', 'sia'], AI: ['air india'], EK: ['emirates'], QR: ['qatar airways', 'qatar'], MH: ['malaysia airlines', 'malaysia air'], TG: ['thai airways', 'thai air', 'thai'], CX: ['cathay pacific', 'cathay'], NZ: ['air new zealand', 'air nz'] };
-  var CAT = [
-    ['QF', 520, 'SYD', 'BNE', '07:10'], ['QF', 522, 'SYD', 'BNE', '09:30'], ['QF', 524, 'SYD', 'BNE', '13:05'], ['QF', 528, 'SYD', 'BNE', '18:15'], ['VA', 943, 'SYD', 'BNE', '08:20'], ['JQ', 501, 'SYD', 'BNE', '06:15'],
-    ['QF', 521, 'BNE', 'SYD', '10:00'], ['QF', 523, 'BNE', 'SYD', '18:30'], ['VA', 946, 'BNE', 'SYD', '17:05'], ['JQ', 502, 'BNE', 'SYD', '07:30'],
-    ['QF', 401, 'SYD', 'MEL', '06:30'], ['QF', 403, 'SYD', 'MEL', '08:00'], ['QF', 411, 'SYD', 'MEL', '12:10'], ['VA', 821, 'SYD', 'MEL', '07:45'], ['JQ', 503, 'SYD', 'MEL', '16:20'],
-    ['QF', 430, 'MEL', 'SYD', '09:05'], ['QF', 444, 'MEL', 'SYD', '18:15'], ['VA', 828, 'MEL', 'SYD', '14:30'], ['JQ', 508, 'MEL', 'SYD', '20:10'],
-    ['QF', 583, 'SYD', 'PER', '08:50'], ['QF', 582, 'PER', 'SYD', '09:40'], ['VA', 687, 'SYD', 'PER', '12:25'],
-    ['QF', 703, 'SYD', 'ADL', '07:00'], ['QF', 704, 'ADL', 'SYD', '13:30'], ['VA', 715, 'SYD', 'CBR', '07:30'], ['JQ', 563, 'SYD', 'OOL', '09:30'],
-    ['QF', 11, 'SYD', 'LAX', '11:00'], ['QF', 12, 'LAX', 'SYD', '22:30'],
-    ['SQ', 232, 'SYD', 'SIN', '09:25'], ['SQ', 221, 'SYD', 'SIN', '13:50'], ['QF', 81, 'SYD', 'SIN', '10:40'], ['SQ', 231, 'SIN', 'SYD', '08:40'], ['QF', 82, 'SIN', 'SYD', '01:15'],
-    ['SQ', 528, 'SIN', 'HYD', '17:35'], ['SQ', 524, 'SIN', 'HYD', '08:45'], ['SQ', 529, 'HYD', 'SIN', '21:45'],
-    ['AI', 301, 'SYD', 'DEL', '20:30'], ['AI', 302, 'DEL', 'SYD', '21:30'], ['AI', 117, 'HYD', 'DEL', '08:10'], ['AI', 118, 'DEL', 'HYD', '15:20'],
-    ['EK', 413, 'SYD', 'DXB', '21:35'], ['EK', 412, 'DXB', 'SYD', '10:15'], ['EK', 524, 'DXB', 'HYD', '09:30'],
-    ['QR', 908, 'SYD', 'DOH', '21:55'], ['QR', 909, 'DOH', 'SYD', '01:10'], ['QR', 542, 'DOH', 'HYD', '03:00'],
-    ['MH', 122, 'SYD', 'KUL', '09:20'], ['MH', 123, 'KUL', 'SYD', '22:40'], ['TG', 476, 'SYD', 'BKK', '11:45'], ['CX', 110, 'SYD', 'HKG', '10:15'],
-    ['NZ', 108, 'SYD', 'AKL', '08:30'], ['NZ', 109, 'AKL', 'SYD', '13:45'], ['SQ', 305, 'SIN', 'LHR', '23:55'], ['SQ', 322, 'LHR', 'SIN', '11:40']
-  ];
   function findFlight(id) { return S.flights.concat(S.tracked).filter(function (x) { return x.id === id; })[0]; }
   function liveList() {
     var n = Date.now();
@@ -1037,70 +997,157 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
     return '<div class="btns"><button class="btn sm" data-open="' + f.id + '">Open flight details</button>' +
       (f.tracked ? '<button class="btn sm" data-save="' + f.id + '">Save to My Flights</button><button class="btn sm danger" data-untrack="' + f.id + '">Stop tracking</button>' : '') + '</div>';
   }
-  function mkFlight(e, date) {
-    var d = km({ from: e[2], to: e[3] }), mins = Math.round((d / (d > 1500 ? 820 : 700) * 60 + 30) / 5) * 5, dep = L(date + ' ' + e[4], AP[e[2]].tz), key = 'T|' + e[0] + '|' + e[1] + '|' + date;
-    return { id: key, key: key, tracked: true, trip: 'Tracked', airline: AIRLINES[e[0]], no: e[0] + e[1], from: e[2], to: e[3], dep: dep, arr: dep + mins * 60000, delay: 0, ref: '', ticket: '', seat: '', terminal: '', gate: '', pax: [], notes: '' };
+  /* ---------- live search: flight number, airport departures, route (AeroDataBox) ---------- */
+  var SR = {}, SRT = { key: null, t: 0 }, NUMRE = /^\s*([A-Za-z0-9]{2})\s?(\d{1,4})\s*$/;
+  function adb(path) {
+    return fetch('https://aerodatabox.p.rapidapi.com' + path, { headers: { 'X-RapidAPI-Key': adbKey(), 'X-RapidAPI-Host': 'aerodatabox.p.rapidapi.com' } }).then(function (x) {
+      if (x.status === 204 || x.status === 404) return null;
+      if (!x.ok) throw new Error('The flight data service replied ' + x.status + (x.status === 401 || x.status === 403 ? '. Check the key in Settings.' : x.status === 429 ? '. The free allowance may be used up.' : '.'));
+      return x.json();
+    }, function () { throw new Error('Could not reach the flight data service. Check your connection.'); });
   }
-  /* Understands flight numbers (QF520, qf 520), airlines, airport codes, city names, "X to Y" and "from X". */
-  function searchCat(raw) {
-    var q = ' ' + raw.toLowerCase().replace(/[^a-z0-9 ]/g, ' ').replace(/\s+/g, ' ').trim() + ' ', al = null, num = null, m, re = /\b([a-z]{2})\s?(\d{1,4})\b/g;
-    while ((m = re.exec(q))) { if (AIRLINES[m[1].toUpperCase()]) { al = m[1].toUpperCase(); num = m[2]; q = q.replace(m[0], ' '); break; } }
-    Object.keys(ALIAS).forEach(function (c) { ALIAS[c].forEach(function (nm) { if (q.indexOf(' ' + nm + ' ') >= 0) { if (!al) al = c; q = q.replace(' ' + nm + ' ', '  '); } }); });
-    if (!al) { q.trim().split(' ').forEach(function (t) { if (!al && t.length === 2 && AIRLINES[t.toUpperCase()]) { al = t.toUpperCase(); q = q.replace(' ' + t + ' ', '  '); } }); }
-    if (al && !num) { m = /\s(\d{1,4})\s/.exec(q); if (m) { num = m[1]; q = q.replace(m[0], '  '); } }
-    var pl = [];
-    Object.keys(AP).forEach(function (c) {
-      [c.toLowerCase(), AP[c].n.toLowerCase()].forEach(function (nm) {
-        var i = q.indexOf(' ' + nm + ' ');
-        if (i >= 0 && !pl.some(function (x) { return x.c === c; })) { var pre = q.slice(0, i).trim().split(' ').pop(); pl.push({ c: c, i: i, dir: pre === 'from' ? 'from' : pre === 'to' ? 'to' : '' }); }
-      });
-    });
-    pl.sort(function (a, b) { return a.i - b.i; });
-    if (!al && !num && !pl.length) return [];
-    var fromP = pl.filter(function (x) { return x.dir === 'from'; })[0], toP = pl.filter(function (x) { return x.dir === 'to'; })[0], dirs = !!(fromP || toP);
-    if (!dirs && pl.length >= 2) { fromP = pl[0]; toP = pl[1]; }
-    function run(swap) {
-      return CAT.filter(function (e) {
-        if (al && e[0] !== al) return false;
-        if (num && String(e[1]).indexOf(num) !== 0) return false;
-        if (pl.length === 1 && !pl[0].dir) return e[2] === pl[0].c || e[3] === pl[0].c;
-        var f = fromP && fromP.c, t = toP && toP.c; if (swap) { var x = f; f = t; t = x; }
-        if (f && e[2] !== f) return false;
-        if (t && e[3] !== t) return false;
-        return true;
-      });
+  function ldate(ts, tz) { return new Intl.DateTimeFormat('en-CA', { timeZone: tz }).format(ts); }
+  function mvT(m) { m = m || {}; return { s: tsOf(m.scheduledTime || { utc: m.scheduledTimeUtc, local: m.scheduledTimeLocal }), r: tsOf(m.revisedTime || m.predictedTime || { utc: m.revisedTimeUtc, local: m.revisedTimeLocal }) }; }
+  /* Copies real status from an AeroDataBox flight record onto f and returns the list of changes worth an alert. */
+  function applyLive(f, x) {
+    var d = x.departure || {}, a = x.arrival || {}, dt = mvT(d), at = mvT(a), ch = [], first = !f.chk, old = { delay: f.delay || 0, gate: f.gate || '', terminal: f.terminal || '', cancelled: !!f.cancelled };
+    if (dt.s && (!f.dep || Math.abs(dt.s - f.dep) < 12 * 3600000)) f.dep = dt.s;
+    if (at.s && (!f.arr || Math.abs(at.s - f.arr) < 12 * 3600000)) f.arr = at.s;
+    f.delay = dt.s && dt.r ? Math.round((dt.r - dt.s) / 60000) : 0;
+    f.adelay = at.s && at.r ? Math.round((at.r - at.s) / 60000) : null;
+    if (d.terminal) f.terminal = d.terminal; if (d.gate) f.gate = d.gate;
+    if (a.terminal) f.aterm = a.terminal; if (a.gate) f.agate = a.gate;
+    f.st = x.status || ''; f.cancelled = /cancel/i.test(f.st);
+    var l = x.location;
+    if (l && l.lat != null) { var gs = l.groundSpeed || {}, al = l.altitude || {}; f.loc = { lat: l.lat, lon: l.lon, alt: al.meter != null ? al.meter : null, spd: gs.kmPerHour != null ? gs.kmPerHour : gs.kmh != null ? gs.kmh : null, at: tsOf({ utc: l.reportedAtUtc }) || Date.now() }; } else if (f.loc && Date.now() - f.loc.at > 30 * 60000) f.loc = null;
+    if (!first) {
+      var T = S.settings || {};
+      if (f.cancelled && !old.cancelled && T.delay !== false) ch.push({ type: 'delay', title: f.no + ' cancelled', body: AP[f.from].n + ' to ' + AP[f.to].n + ' on ' + df(f.dep, AP[f.from].tz) + ' has been cancelled.' });
+      else if (Math.abs(f.delay - old.delay) >= 5 && T.delay !== false) ch.push({ type: 'delay', title: f.delay > 0 ? f.no + ' delayed ' + f.delay + ' min' : f.no + ' is back on time', body: 'New departure ' + tf(effDep(f), AP[f.from].tz) + ' from ' + AP[f.from].n + '.' });
+      if (f.gate && f.gate !== old.gate && T.gate !== false) ch.push({ type: 'gate', title: old.gate ? 'Gate change for ' + f.no : 'Gate assigned for ' + f.no, body: old.gate ? 'Gate ' + old.gate + ' is now ' + f.gate + '.' : 'Gate ' + f.gate + (f.terminal ? ', Terminal ' + f.terminal : '') + '.' });
+      else if (f.terminal && f.terminal !== old.terminal && T.gate !== false) ch.push({ type: 'gate', title: 'Terminal change for ' + f.no, body: 'Terminal ' + f.terminal + '.' });
     }
-    var res = run(false);
-    if (!res.length && !dirs && pl.length >= 2) res = run(true);
-    return res;
+    f.chk = Date.now(); return ch;
   }
+  function pollFlight(f, force) {
+    if (!adbKey()) return Promise.resolve(false);
+    var n = Date.now(), win = f.dep - n, gap = n >= f.dep - 3 * 3600000 ? 5 * 60000 : win < 48 * 3600000 ? 30 * 60000 : win < 14 * 86400000 ? 6 * 3600000 : 86400000;
+    if (f.chk && n - f.chk < (force ? 20000 : gap)) return Promise.resolve(false);
+    if (effArr(f) < n - 6 * 3600000 && f.chk) return Promise.resolve(false);
+    var tz = AP[f.from] ? AP[f.from].tz : 'UTC';
+    return adb('/flights/number/' + encodeURIComponent(f.no) + '/' + ldate(f.dep, tz) + '?withAircraftImage=false&withLocation=true').then(function (j) {
+      POLLERR = '';
+      var arr = Array.isArray(j) ? j : [], x = arr.filter(function (q) { var di = q.departure && q.departure.airport && q.departure.airport.iata; return di && di.toUpperCase() === f.from; })[0];
+      if (!x) { f.chk = Date.now(); return false; }
+      regAp(x.departure.airport); regAp(x.arrival && x.arrival.airport);
+      var ch = applyLive(f, x); keepAps(f);
+      ch.forEach(function (c) { S.alerts.push({ id: 'a' + (S.nextId++), fid: f.id, type: c.type, title: c.title, body: c.body, at: Date.now(), unread: true }); });
+      if (ch.length) toast(ch[0].title, ch[0].body);
+      return true;
+    }, function (e) { POLLERR = e.message; f.chk = f.chk || 0; return false; });
+  }
+  function afterPoll() {
+    save();
+    if (detail && detail !== '__add') { openDetail(detail); return; }
+    if (['home', 'flights', 'live', 'alerts'].indexOf(view) >= 0 && !detail) render();
+  }
+  function pollAll(force) {
+    if (!adbKey()) return;
+    var n = Date.now(), list = S.flights.concat(S.tracked).filter(function (f) { return effArr(f) > n - 2 * 3600000 && f.dep - n < 14 * 86400000 && AP[f.from] && AP[f.to]; }).slice(0, 12);
+    Promise.all(list.map(function (f) { return pollFlight(f, force); })).then(function (r) { if (r.some(Boolean) || POLLERR) afterPoll(); });
+  }
+  function srGet(key, run) {
+    if (SR[key]) return SR[key];
+    if (SRT.key === key) return { busy: true };
+    clearTimeout(SRT.t); SRT.key = key;
+    SRT.t = setTimeout(function () {
+      SRT.key = null; SR[key] = { busy: true };
+      run().then(function (v) { SR[key] = v; }, function (e) { SR[key] = { err: e.message || 'Could not reach the flight data service.' }; })
+        .then(function () { var x = document.getElementById('results'); if (x && (view === 'add' || view === 'search')) x.innerHTML = resultsHtml(); });
+    }, 450);
+    return { busy: true };
+  }
+  function ensureAp(code) {
+    if (AP[code]) return Promise.resolve(code);
+    return adb('/airports/iata/' + code).then(function (a) { if (!a) throw new Error('No airport found with code ' + code + '.'); a.iata = a.iata || code; regAp(a); return code; });
+  }
+  /* Turns "SYD", "Sydney" into {code} or {choices}. */
+  function resolveAp(text) {
+    var t = text.trim(), tl = t.toLowerCase();
+    if (/^[a-z]{3}$/i.test(t)) return ensureAp(t.toUpperCase()).then(function (c) { return { code: c }; });
+    var hit = Object.keys(AP).filter(function (c) { return AP[c].n.toLowerCase() === tl; });
+    if (hit.length === 1) return Promise.resolve({ code: hit[0] });
+    return adb('/airports/search/term?q=' + encodeURIComponent(t) + '&limit=6').then(function (j) {
+      var it = ((j && j.items) || []).filter(function (a) { return a.iata; });
+      if (!it.length) throw new Error('No airport found for “' + t + '”. Try the 3-letter code such as SYD.');
+      it.forEach(function (a) { regAp(a); });
+      return it.length === 1 ? { code: it[0].iata.toUpperCase() } : { choices: it.map(function (a) { return { c: a.iata.toUpperCase(), n: a.municipalityName || a.shortName || a.name, f: a.name }; }) };
+    });
+  }
+  function fidsFlight(x, code, date) {
+    var dp = x.departure || {}, ar = x.arrival || {}, mv = x.movement || {}, other = null;
+    if (ar.airport && ar.airport.iata && ar.airport.iata.toUpperCase() !== code) other = ar.airport; else if (mv.airport && mv.airport.iata && mv.airport.iata.toUpperCase() !== code) other = mv.airport;
+    if (!other) return null; var tc = regAp(other); if (!tc) return null;
+    var dt = mvT(dp).s || mvT(mv).s, at = mvT(ar).s; if (!dt) return null;
+    var no = String(x.number || '').replace(/\s+/g, '').toUpperCase(), key = 'L|' + no + '|' + date + '|' + code;
+    var f = { id: key, key: key, tracked: true, trip: 'Tracked', airline: (x.airline && x.airline.name) || '', no: no, from: code, to: tc, dep: dt, arr: at || 0, delay: 0, ref: '', ticket: '', seat: '', terminal: dp.terminal || mv.terminal || '', gate: dp.gate || mv.gate || '', pax: [], notes: '' };
+    var old = LIVEF[key]; if (old && old.arr && !f.arr) f.arr = old.arr; LIVEF[key] = f; return f;
+  }
+  function departures(code, date) {
+    var tz = AP[code].tz, win = [[date + 'T00:00', date + 'T11:59'], [date + 'T12:00', date + 'T23:59']];
+    return Promise.all(win.map(function (w) {
+      return adb('/flights/airports/iata/' + code + '/' + w[0] + '/' + w[1] + '?direction=Departure&withLeg=true&withCancelled=false&withCodeshared=false&withCargo=false&withPrivate=false&withLocation=false');
+    })).then(function (rs) {
+      var out = [], seen = {}; rs.forEach(function (j) { ((j && j.departures) || []).forEach(function (x) { var f = fidsFlight(x, code, date); if (f && !seen[f.key + f.dep]) { seen[f.key + f.dep] = 1; out.push(f); } }); });
+      return out;
+    });
+  }
+  function fetchNum(code, date) {
+    return adb('/flights/number/' + encodeURIComponent(code) + '/' + date + '?withAircraftImage=false&withLocation=true').then(function (j) {
+      return { list: (Array.isArray(j) ? j : []).map(function (x) { var f = adbToFlight(x, date); if (f) applyLive(f, x); return f; }).filter(Boolean) };
+    });
+  }
+  function mkPlan(AD) {
+    var date = searchDate;
+    if (AD && addMode === 'route') { var a = rFrom.trim(), b = rTo.trim(); return a && b ? { type: 'route', from: a, to: b, date: date } : { wait: 'Choose the departure and arrival airports, then the date. Flights on that route appear here.' }; }
+    var q = searchQ.trim(); if (!q) return null;
+    var m = NUMRE.exec(q); if (m) return { type: 'num', code: (m[1] + m[2]).toUpperCase(), date: date };
+    var low = ' ' + q.toLowerCase().replace(/[^a-z0-9>\- ]/g, ' ').replace(/\s+/g, ' ').trim() + ' ', al = '';
+    Object.keys(ALIAS).forEach(function (c) { ALIAS[c].forEach(function (nm) { if (!al && low.indexOf(' ' + nm + ' ') >= 0) { al = c; low = low.replace(' ' + nm + ' ', ' '); } }); });
+    low = low.trim();
+    var mt = /^(?:from\s+)?(.+?)\s+(?:to|-|>)\s+(.+)$/.exec(low) || /^([a-z]{3})\s+([a-z]{3})$/.exec(low);
+    if (mt) return { type: 'route', from: mt[1], to: mt[2], al: al, date: date };
+    low = low.replace(/^from\s+/, '');
+    if (!low) return { wait: 'Add an airport, such as ' + (al || 'Qantas') + ' SYD, or the full flight number, such as ' + (al || 'QF') + '520. Airline-only searches are not available from the live data.' };
+    return { type: 'board', ap: low, al: al, date: date };
+  }
+  function runPlan(pl) {
+    if (pl.type === 'num') return fetchNum(pl.code, pl.date);
+    function filt(list, to) { return list.filter(function (f) { return (!to || f.to === to) && (!pl.al || f.no.slice(0, 2) === pl.al); }); }
+    if (pl.type === 'route') return Promise.all([resolveAp(pl.from), resolveAp(pl.to)]).then(function (r) {
+      var A = r[0].code || (r[0].choices && r[0].choices[0].c), B = r[1].code || (r[1].choices && r[1].choices[0].c);
+      return departures(A, pl.date).then(function (l) { return { list: filt(l, B), total: l.length, note: AP[A].n + ' to ' + AP[B].n }; });
+    });
+    return resolveAp(pl.ap).then(function (r) {
+      if (r.choices) return { choices: r.choices };
+      return departures(r.code, pl.date).then(function (l) { return { list: filt(l), note: 'Departures from ' + AP[r.code].n + ' (' + r.code + ')' }; });
+    });
+  }
+  function noKeyHtml() { return '<div class="card tight"><div class="t" style="font-weight:600">Live flight data key needed</div><div class="note">Paste your AeroDataBox key in Settings to search real flights.</div><div class="btns"><button class="btn sm" type="button" data-go="settings">Open Settings</button></div></div>'; }
   function resultsHtml() {
-    var AD = view === 'add', q = AD && addMode === 'route' ? ((rFrom.trim() ? 'from ' + rFrom.trim() : '') + ' ' + (rTo.trim() ? 'to ' + rTo.trim() : '')).trim() : searchQ.trim(), h = '';
-    if (!q && AD) return addLanding();
-    var lv = q ? liveHtml(q, AD) : null; if (lv !== null) return lv;
-    if (!q) return '<div class="note">Search by flight number, airline, airport or route. Try one of these:</div><div class="hints">' +
-      ['QF520', 'SQ 232', 'Sydney to Brisbane', 'SYD SIN', 'Qantas Melbourne', 'to Hyderabad', 'Emirates'].map(function (x) { return '<button type="button" class="hint" data-hint="' + x + '">' + x + '</button>'; }).join('') +
-      '</div><p class="note">Schedules here are sample data. The real build searches live airline schedules worldwide.</p>';
-    var key = q.toLowerCase().replace(/[^a-z0-9]/g, ''), now = Date.now(), out = [], hidden = 0;
-    var mine = AD ? [] : upcoming().filter(function (f) { return f.ref && key.indexOf(f.ref.toLowerCase()) >= 0; });
-    searchCat(q).forEach(function (e) { var f = mkFlight(e, searchDate); if (effArr(f) > now) out.push(f); else hidden++; });
-    out.sort(function (x, y) { return x.dep - y.dep; });
-    var shown = out.slice(0, 12);
-    mine.forEach(function (f) {
-      h += '<div class="card tight rcard"><div class="sechead"><span class="label">Your booking &middot; ' + esc(f.ref) + '</span></div><div class="lrow"><div><div class="rt">' + f.from + ' to ' + f.to + '</div><div class="rm">' + esc(f.no) + ' &middot; ' + df(effDep(f), AP[f.from].tz) + ' ' + tf(effDep(f), AP[f.from].tz) + '</div></div><button class="btn primary sm" type="button" data-live="' + f.id + '">Open live</button></div></div>';
-    });
-    shown.forEach(function (f) {
-      var A = AP[f.from], B = AP[f.to], on = S.tracked.some(function (t) { return t.key === f.key; }), air = now > f.dep;
-      h += '<div class="card tight rcard"><div class="sechead"><span class="label">' + esc(f.airline) + ' &middot; ' + esc(f.no) + '</span><span class="pill ' + (air ? 'ok' : 'idle') + '">' + (air ? 'In the air' : 'Scheduled') + '</span></div>' +
-        '<div class="lrow"><div style="min-width:0"><div class="rt">' + f.from + ' to ' + f.to + '</div><div class="rm">' + tf(f.dep, A.tz) + ' ' + A.n + ' &rarr; ' + tf(f.arr, B.tz) + ' ' + B.n + ' &middot; ' + dur(f.dep, f.arr) + '</div></div>' +
-        (AD ? (S.flights.some(function (x) { return x.no === f.no && x.dep === f.dep; }) ? '<button class="btn sm" type="button" disabled>Added</button>' : '<button class="btn primary sm" type="button" data-addcat="' + esc(f.key) + '">Add</button>') : on ? '<button class="btn sm" type="button" disabled>Tracking</button>' : '<button class="btn primary sm" type="button" data-track="' + esc(f.key) + '">Track</button>') + '</div></div>';
-    });
-    if (!shown.length && !mine.length) h += '<div class="card tight"><div class="t" style="font-weight:600">No flights found</div><div class="note">Nothing matched &ldquo;' + esc(q) + '&rdquo; on ' + df(L(searchDate + ' 12:00', MY_TZ), MY_TZ) + '. Try a flight number such as QF520, two airports such as SYD BNE, or a city such as Singapore.' + (hidden ? ' ' + hidden + ' matching flight' + (hidden > 1 ? 's have' : ' has') + ' already landed. Pick a later date.' : '') + '</div>' + (hidden ? '<div class="btns"><button type="button" class="btn primary sm" data-sdate="1">Try tomorrow</button></div>' : '') + (AD ? '<div class="btns"><button class="btn sm" type="button" data-go="add-manual">Enter details manually</button></div>' : '') + '</div>';
-    else {
-      if (out.length > shown.length) h += '<p class="note">Showing 12 of ' + out.length + '. Add more detail to narrow it down.</p>';
-      if (hidden) h += '<p class="note">' + hidden + ' earlier flight' + (hidden > 1 ? 's' : '') + ' already landed and ' + (hidden > 1 ? 'are' : 'is') + ' not shown.</p>';
-    }
-    return h;
+    var AD = view === 'add';
+    if (!adbKey()) return noKeyHtml();
+    var pl = mkPlan(AD);
+    if (!pl) return AD ? addLanding() : '<div class="note">Search by flight number (QF520), airport (SYD or Sydney) or route (SYD to BNE). Results come live from airline schedules.</div><div class="hints">' + ['QF520', 'SYD to BNE', 'SYD'].map(function (x) { return '<button type="button" class="hint" data-hint="' + x + '">' + x + '</button>'; }).join('') + '</div>';
+    if (pl.wait) return '<div class="note">' + esc(pl.wait) + '</div>';
+    var key = [pl.type, pl.code || pl.from || pl.ap, pl.to || '', pl.al || '', pl.date].join('|'), c = srGet(key, function () { return runPlan(pl); });
+    if (c.busy) return '<div class="note">Searching live schedules&hellip;</div>';
+    if (c.err) { delete SR[key]; return '<div class="card tight"><div class="t" style="font-weight:600">Could not search</div><div class="note">' + esc(c.err) + '</div></div>'; }
+    if (c.choices) return '<div class="note">Which airport?</div><div class="list">' + c.choices.map(function (a) { return '<button type="button" class="lrowb" data-hint="' + a.c + '"><span class="ico">' + a.c + '</span><span class="tx"><b>' + esc(a.n) + '</b><small>' + esc(a.f) + '</small></span></button>'; }).join('') + '</div>';
+    var list = c.list.slice().sort(function (x, y) { return x.dep - y.dep; });
+    if (!list.length) return '<div class="card tight"><div class="t" style="font-weight:600">No flights found</div><div class="note">Nothing found' + (c.note ? ' for ' + esc(c.note) : ' for ' + esc(pl.code || '')) + ' on ' + df(L(pl.date + ' 12:00', MY_TZ), MY_TZ) + '. Check the details and date.</div></div>' + (AD ? '<div class="btns"><button class="btn sm" type="button" data-go="add-manual">Enter details manually</button></div>' : '');
+    var h = c.note ? '<div class="note">' + esc(c.note) + ' &middot; ' + list.length + ' flight' + (list.length > 1 ? 's' : '') + '</div>' : '';
+    return h + list.slice(0, 25).map(function (f) { return liveCard(f, AD); }).join('') + (list.length > 25 ? '<p class="note">Showing 25 of ' + list.length + '. Add a destination or airline to narrow it down.</p>' : '');
   }
   function searchView() {
     var h = head('Find a flight', { close: true });
@@ -1136,27 +1183,12 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
     var f = { id: key, key: key, tracked: true, trip: 'Tracked', airline: (x.airline && x.airline.name) || '', no: no, from: fc, to: tc, dep: dt, arr: at, delay: 0, ref: '', ticket: '', seat: '', terminal: d.terminal || '', gate: d.gate || '', pax: [], notes: '' };
     LIVEF[key] = f; return f;
   }
-  function liveFetch(lk) {
-    var p = lk.split('|'); LIVE[lk] = { busy: true };
-    fetch('https://aerodatabox.p.rapidapi.com/flights/number/' + encodeURIComponent(p[0]) + '/' + p[1] + '?withAircraftImage=false&withLocation=true', { headers: { 'X-RapidAPI-Key': adbKey(), 'X-RapidAPI-Host': 'aerodatabox.p.rapidapi.com' } })
-      .then(function (x) { if (x.status === 204 || x.status === 404) return []; if (!x.ok) throw new Error('The flight data service replied ' + x.status + (x.status === 401 || x.status === 403 ? '. Check the key in Settings.' : x.status === 429 ? '. The free allowance may be used up.' : '.')); return x.json(); })
-      .then(function (j) { LIVE[lk] = { list: (Array.isArray(j) ? j : []).map(function (x) { return adbToFlight(x, p[1]); }).filter(Boolean) }; }, function (e) { LIVE[lk] = { err: e.message || 'Could not reach the flight data service.' }; })
-      .then(function () { var x = document.getElementById('results'); if (x && (view === 'add' || view === 'search')) x.innerHTML = resultsHtml(); });
-  }
   function liveCard(f, AD) {
-    var A = AP[f.from], B = AP[f.to], on = AD ? S.flights.some(function (x) { return x.no === f.no && x.dep === f.dep; }) : S.tracked.some(function (t) { return t.key === f.key; });
-    return '<div class="card tight rcard"><div class="sechead"><span class="label">' + esc(f.airline || 'Flight') + ' &middot; ' + esc(f.no) + '</span><span class="pill idle">Scheduled</span></div>' +
-      '<div class="lrow"><div style="min-width:0"><div class="rt">' + f.from + ' to ' + f.to + '</div><div class="rm">' + tf(f.dep, A.tz) + ' ' + esc(A.n) + ' &rarr; ' + tf(f.arr, B.tz) + ' ' + esc(B.n) + ' &middot; ' + dur(f.dep, f.arr) + '</div></div>' +
+    var A = AP[f.from], B = AP[f.to], n = Date.now(), on = AD ? S.flights.some(function (x) { return x.no === f.no && x.dep === f.dep; }) : S.tracked.some(function (t) { return t.key === f.key; }) || S.flights.some(function (x) { return x.no === f.no && x.dep === f.dep; }),
+      st = f.cancelled ? ['Cancelled', 'bad'] : f.delay >= 15 ? ['Delayed ' + f.delay + 'm', 'warn'] : f.arr && n > f.arr ? ['Landed', 'idle'] : n > f.dep ? ['Departed', 'ok'] : ['Scheduled', 'idle'];
+    return '<div class="card tight rcard"><div class="sechead"><span class="label">' + esc(f.airline || 'Flight') + ' &middot; ' + esc(f.no) + '</span><span class="pill ' + st[1] + '">' + st[0] + '</span></div>' +
+      '<div class="lrow"><div style="min-width:0"><div class="rt">' + f.from + ' to ' + f.to + '</div><div class="rm">' + tf(effDep(f), A.tz) + ' ' + esc(A.n) + (f.arr ? ' &rarr; ' + tf(effArr(f), B.tz) + ' ' + esc(B.n) + ' &middot; ' + dur(f.dep, f.arr) : ' &rarr; ' + esc(B.n)) + (f.terminal || f.gate ? '<br>' + (f.terminal ? 'Terminal ' + esc(f.terminal) + ' ' : '') + (f.gate ? 'Gate ' + esc(f.gate) : '') : '') + '</div></div>' +
       (on ? '<button class="btn sm" type="button" disabled>' + (AD ? 'Added' : 'Tracking') + '</button>' : AD ? '<button class="btn primary sm" type="button" data-addcat="' + esc(f.key) + '">Add</button>' : '<button class="btn primary sm" type="button" data-track="' + esc(f.key) + '">Track</button>') + '</div></div>';
-  }
-  function liveHtml(q, AD) {
-    var m = /^\s*([A-Za-z0-9]{2})\s?(\d{1,4})\s*$/.exec(q); if (!m || !adbKey()) return null;
-    var lk = (m[1] + m[2]).toUpperCase() + '|' + searchDate, c = LIVE[lk];
-    if (!c) { liveFetch(lk); return '<div class="note">Searching live schedules&hellip;</div>'; }
-    if (c.busy) return '<div class="note">Searching live schedules&hellip;</div>';
-    if (c.err) { delete LIVE[lk]; return '<div class="card tight"><div class="t" style="font-weight:600">Could not search</div><div class="note">' + esc(c.err) + '</div></div>'; }
-    if (!c.list.length) return '<div class="card tight"><div class="t" style="font-weight:600">No flights found</div><div class="note">No schedule for ' + esc(lk.split('|')[0]) + ' on ' + df(L(searchDate + ' 12:00', MY_TZ), MY_TZ) + '. Check the number and date, or enter it manually.</div></div>' + (AD ? '<div class="btns"><button class="btn sm" type="button" data-go="add-manual">Enter details manually</button></div>' : '');
-    return c.list.map(function (f) { return liveCard(f, AD); }).join('');
   }
   function addFlightView() {
     var h = head('Add flight', { close: true }), box;
@@ -1180,11 +1212,21 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
       al.map(function (c) { return '<button type="button" class="lrowb" data-hint="' + esc(AIRLINES[c]) + '"><span class="ico">' + c + '</span><span class="tx"><b>' + esc(AIRLINES[c]) + '</b><small>' + c + '</small></span></button>'; }).join('') +
       ap.map(function (c) { return '<button type="button" class="lrowb" data-hint="' + c + '"><span class="ico">' + c + '</span><span class="tx"><b>' + esc(AP[c].n) + '</b><small>' + c + ' &middot; ' + esc(AP[c].n) + '</small></span></button>'; }).join('') + '</div>' +
       '<div class="sechead" style="margin-top:14px"><span class="label">More</span></div><div class="list"><button type="button" class="lrowb" data-go="add-manual"><span class="ico">' + IE + '</span><span class="tx"><b>Enter details manually</b><small>Any airline, with booking reference and seat</small></span></button></div>' +
-      '<p class="note">Schedules here are sample data. The real build searches live airline schedules.</p>';
+      '';
+  }
+  function hydrate(key, then) {
+    var f = LIVEF[key]; if (!f) return;
+    if (f.chk && f.arr) { then(); return; }
+    toast('Getting flight details', f.no);
+    adb('/flights/number/' + encodeURIComponent(f.no) + '/' + key.split('|')[2] + '?withAircraftImage=false&withLocation=true').then(function (j) {
+      var x = (Array.isArray(j) ? j : []).filter(function (q) { var di = q.departure && q.departure.airport && q.departure.airport.iata; return di && di.toUpperCase() === f.from; })[0];
+      if (x) { regAp(x.departure.airport); regAp(x.arrival && x.arrival.airport); var g = adbToFlight(x, key.split('|')[2]); if (g) { applyLive(g, x); g.key = key; g.id = key; LIVEF[key] = g; } }
+      if (LIVEF[key].arr) then(); else toast('Flight details unavailable', 'The arrival time could not be loaded. Try again shortly.');
+    }, function (e) { toast('Could not load flight', e.message); });
   }
   function openAddSheet(key) {
-    var p = key.split('|'), e = CAT.filter(function (x) { return x[0] === p[1] && String(x[1]) === p[2]; })[0]; if (!e && !LIVEF[key]) return;
-    var f = LIVEF[key] || mkFlight(e, p[3]), A = AP[f.from], B = AP[f.to], trips = []; S.flights.forEach(function (x) { if (trips.indexOf(x.trip) < 0) trips.push(x.trip); });
+    if (!LIVEF[key]) return;
+    var f = LIVEF[key], A = AP[f.from], B = AP[f.to], trips = []; S.flights.forEach(function (x) { if (trips.indexOf(x.trip) < 0) trips.push(x.trip); });
     var sh = document.getElementById('sheet'); detail = '__add';
     sh.innerHTML = '<div class="sheet-bar gut"><div class="sheet-top"><button class="btn sm" type="button" data-act="back">Cancel</button></div></div><div class="sheet-scroll gut"><div class="sheet-in"><form id="confirmForm" novalidate>' +
       '<div class="card"><span class="label">' + esc(f.airline) + ' &middot; ' + esc(f.no) + ' &middot; ' + dfy(f.dep, A.tz) + '</span><div class="rt" style="font-family:var(--f-display);font-weight:700;font-size:30px;line-height:1.1">' + f.from + ' to ' + f.to + '</div><div class="note" style="margin:4px 0 0">' + tf(f.dep, A.tz) + ' ' + A.n + ' &rarr; ' + tf(f.arr, B.tz) + ' ' + B.n + ' &middot; ' + dur(f.dep, f.arr) + '</div></div>' +
@@ -1199,16 +1241,16 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
     sh.querySelector('#confirmForm').addEventListener('submit', function (ev) {
       ev.preventDefault(); var fm = ev.target, v = function (n) { return (fm.elements[n].value || '').trim(); };
       var pax = Array.prototype.map.call(fm.querySelectorAll('input[name=pax]:checked'), function (x) { return x.value; });
-      var nf = { id: 'f' + (S.nextId++), trip: v('trip') || (B.n + ' trip'), airline: f.airline, no: f.no, from: f.from, to: f.to, dep: f.dep, arr: f.arr, delay: 0, ref: v('ref').toUpperCase(), ticket: v('ticket'), seat: v('seat').toUpperCase(), terminal: '', gate: '', pax: pax, notes: '' };
+      var nf = { id: 'f' + (S.nextId++), trip: v('trip') || (B.n + ' trip'), airline: f.airline, no: f.no, from: f.from, to: f.to, dep: f.dep, arr: f.arr, delay: 0, ref: v('ref').toUpperCase(), ticket: v('ticket'), seat: v('seat').toUpperCase(), terminal: f.terminal || '', gate: f.gate || '', pax: pax, notes: '', delay: f.delay || 0, adelay: f.adelay, aterm: f.aterm, agate: f.agate, st: f.st, cancelled: f.cancelled, chk: f.chk, loc: f.loc };
       keepAps(nf); S.flights.push(nf); save(); detail = null; sh.hidden = true; go('flights'); toast('Added to My Flights', nf.no + ' ' + nf.from + ' to ' + nf.to);
     });
   }
   function keepAps(f) { [f.from, f.to].forEach(function (c) { if (LIVEAP[c]) { S.airports = S.airports || {}; S.airports[c] = LIVEAP[c]; } }); }
   function trackFlight(key) {
-    var p = key.split('|'), e = CAT.filter(function (x) { return x[0] === p[1] && String(x[1]) === p[2]; })[0]; if (!e && !LIVEF[key]) return;
+    if (!LIVEF[key]) return;
     var ex = S.tracked.filter(function (t) { return t.key === key; })[0];
     if (ex) { liveSel = ex.id; go('live'); return; }
-    var f = LIVEF[key] ? JSON.parse(JSON.stringify(LIVEF[key])) : mkFlight(e, p[3]); f.id = 'tr' + (S.nextId++); keepAps(f);
+    var f = JSON.parse(JSON.stringify(LIVEF[key])); f.id = 'tr' + (S.nextId++); keepAps(f);
     S.tracked.push(f); liveSel = f.id; lsub = 'flights'; save(); go('live');
     toast('Tracking ' + f.no, f.from + ' to ' + f.to + '. You get alerts for delays and gate changes.');
   }
@@ -1291,7 +1333,7 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
     }
     var wb = '';
     if (mapWx) [[f.from, pj[0]], [f.to, pj[N]]].forEach(function (e) {
-      var w = wx(e[0], Date.now()), x = Math.min(Math.max(e[1][0] - 22, 4), W - 48), y = e[1][1] < H / 2 ? Math.min(e[1][1] + 14, H - 24) : Math.max(e[1][1] - 36, 4);
+      var w = wx(e[0], Date.now()); if (!w) return; var x = Math.min(Math.max(e[1][0] - 22, 4), W - 48), y = e[1][1] < H / 2 ? Math.min(e[1][1] + 14, H - 24) : Math.max(e[1][1] - 36, 4);
       wb += '<g transform="translate(' + x.toFixed(1) + ' ' + y.toFixed(1) + ')"><rect class="wxb" width="44" height="20" rx="10"/><text class="wxt" x="22" y="14" text-anchor="middle">' + w.t + '&deg;C</text></g>';
     });
     return '<svg class="mapsvg" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Route map from ' + a.n + ' to ' + b.n + '">' +
@@ -1325,12 +1367,14 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
   }
   function liveMapBody(f) {
     var b = AP[f.to], s = status(f), n = Date.now(), d = effDep(f), ar = effArr(f), air = n > d, p = Math.max(0, Math.min(1, (n - d) / (ar - d))), pc = Math.round(p * 100);
-    var alt = air ? Math.round(11000 * Math.min(1, p / 0.12, (1 - p) / 0.12) / 100) * 100 : 0, spd = air ? Math.round(540 + 300 * Math.min(1, alt / 11000)) : 0, left = Math.round(km(f) * (1 - p) / 10) * 10;
-    return '<section class="card tight"><div class="sechead"><span class="label">Route map</span><span class="label">' + pc + '% flown</span></div><div class="mapwrap">' + (LMF = { f: f, p: p }, window.L ? '<div id="lmap" class="lmap"></div>' : mapSvg(f, p)) + '<div class="mapctl"><button type="button" data-lview="details" aria-label="Back to details"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 3 3 5.5v15L9 18l6 2.5 6-2.5v-15L15 5.5 9 3Zm.75 2.4 4.5 1.9v11.3l-4.5-1.9V5.4Z"/></svg></button><button type="button" data-mapwx aria-label="Show weather" ' + (window.L ? 'hidden' : '') + ' aria-pressed="' + mapWx + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 18a4 4 0 0 1-.6-7.96A5.5 5.5 0 0 1 17 9.5a4.25 4.25 0 0 1 0 8.5H7Z"/></svg></button></div></div>' +
-      '<div class="wxm"><span>Altitude <b>' + alt.toLocaleString('en-AU') + ' m</b></span><span>Speed <b>' + spd + ' km/h</b></span><span>Remaining <b>' + left.toLocaleString('en-AU') + ' km</b></span></div></section>' +
+    var lc = air && f.loc && n - f.loc.at < 30 * 60000 ? f.loc : null;
+    if (lc) { var pts0 = arcPoints(AP[f.from], AP[f.to]), bi = 0, bd = 1e9; pts0.forEach(function (q, i) { var dd = Math.pow(q[1] - lc.lat, 2) + Math.pow((q[0] - lc.lon) * Math.cos(lc.lat * Math.PI / 180), 2); if (dd < bd) { bd = dd; bi = i; } }); p = bi / (pts0.length - 1); pc = Math.round(p * 100); }
+    var left = Math.round(km(f) * (1 - p) / 10) * 10;
+    return '<section class="card tight"><div class="sechead"><span class="label">' + (lc ? 'Live position &middot; ' + tf(lc.at, MY_TZ) : 'Planned route') + '</span><span class="label">' + pc + '% flown</span></div><div class="mapwrap">' + (LMF = { f: f, p: p }, window.L ? '<div id="lmap" class="lmap"></div>' : mapSvg(f, p)) + '<div class="mapctl"><button type="button" data-lview="details" aria-label="Back to details"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M9 3 3 5.5v15L9 18l6 2.5 6-2.5v-15L15 5.5 9 3Zm.75 2.4 4.5 1.9v11.3l-4.5-1.9V5.4Z"/></svg></button><button type="button" data-mapwx aria-label="Show weather" ' + (window.L ? 'hidden' : '') + ' aria-pressed="' + mapWx + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 18a4 4 0 0 1-.6-7.96A5.5 5.5 0 0 1 17 9.5a4.25 4.25 0 0 1 0 8.5H7Z"/></svg></button></div></div>' +
+      '<div class="wxm">' + (lc && lc.alt != null ? '<span>Altitude <b>' + Math.round(lc.alt).toLocaleString('en-AU') + ' m</b></span>' : '') + (lc && lc.spd != null ? '<span>Speed <b>' + Math.round(lc.spd) + ' km/h</b></span>' : '') + '<span>Remaining <b>' + left.toLocaleString('en-AU') + ' km</b></span></div></section>' +
       '<section class="card tight"><div class="sechead"><span class="label">' + esc(f.airline || 'Flight') + ' &middot; ' + esc(f.no) + '</span><span style="display:flex;gap:8px;align-items:center"><span class="pill ' + s[1] + '">' + s[0] + '</span><button class="btn sm" data-lview="details">Details</button></span></div>' +
       '<div class="lrow"><div><span class="label">' + (air ? 'Lands in' : 'Departs in') + '</span><div class="cd" data-cd="' + (air ? ar : d) + '" data-mode="big" data-past="' + (air ? 'Landed' : 'Departed') + '"></div></div><div class="lnote">Arrives ' + tf(ar, b.tz) + '<br>' + esc(b.n) + '</div></div>' +
-      '<div class="row"><div><div class="t">' + (f.delay ? 'Delayed ' + f.delay + ' min' : 'On schedule') + '</div><div class="d">Checked ' + tf(lastChecked, MY_TZ) + ' &middot; simulated</div></div><div class="btns"><button class="btn sm" data-act="refresh">Refresh</button><button class="btn sm" data-sim="' + f.id + '">Simulate</button></div></div></section>' + liveActions(f);
+      liveRow(f) + '</section>' + liveActions(f);
   }
   function liveFlightsBody(f, nx) { return lview === 'map' ? liveMapBody(f) : liveDetailsBody(f, nx); }
 
@@ -1403,7 +1447,7 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
       '<div class="card"><span class="label">Your data</span>' +
       gCard() +
       '<div class="row"><div><div class="t">Google Drive folder</div><div class="d">' + (G.folder ? '<a href="https://drive.google.com/drive/folders/' + esc(G.folder) + '" target="_blank" rel="noopener">Open your WingMan folder</a><br>E-tickets and confirmations you attach are saved here.' : 'Created in your Drive when you sign in. Holds your sheet and attached e-tickets.') + '</div></div><span class="pill ' + (G.folder ? 'ok' : 'idle') + '">' + (G.folder ? 'Linked' : 'Not linked') + '</span></div>' +
-      '<div class="row"><div><div class="t">Live flight data key</div><div class="d">' + (adbKey() ? 'Saved on this phone only. Flight search uses real schedules.' : 'Paste your AeroDataBox key to search real flights.') + '</div></div><span class="pill ' + (adbKey() ? 'ok' : 'warn') + '">' + (adbKey() ? 'Set' : 'Needed') + '</span></div>' +
+      '<div class="row"><div><div class="t">Live flight data key</div><div class="d">' + (adbKey() ? 'Saved on this phone only. Search, delays, gates and live position use this key.' : 'Paste your AeroDataBox key for live flight search and status.') + '</div></div><span class="pill ' + (adbKey() ? 'ok' : 'warn') + '">' + (adbKey() ? 'Set' : 'Needed') + '</span></div>' +
       '<div class="f" style="margin:4px 0 8px"><input id="adbkey" type="password" placeholder="Paste key here" autocomplete="off" autocapitalize="off" spellcheck="false" aria-label="Flight data key"></div><div class="btns"><button class="btn primary sm" data-act="savekey">Save key</button>' + (adbKey() ? '<button class="btn sm" data-act="clearkey">Remove key</button>' : '') + '</div>' +
       '<div class="row"><div><div class="t">Weather</div><div class="d">Live forecast for departure and arrival airports from Open-Meteo.</div></div><span class="pill ok">Live</span></div></div>' +
       '</section>';
@@ -1432,7 +1476,7 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
       '<div class="pass-route"><div><div class="code">' + f.from + '</div><div class="city">' + a.n + '</div></div><div class="mid">' + PLANE + '<span>' + dur(f.dep, f.arr) + '</span></div><div class="end"><div class="code">' + f.to + '</div><div class="city">' + b.n + '</div></div></div>' +
       '<div class="times"><div><div class="label">Departs</div><div class="big">' + tf(d, a.tz) + delayTxt + '</div></div><div class="r"><div class="label">Arrives</div><div class="big">' + tf(ar, b.tz) + '</div></div></div></div>' +
       '<div class="perf"></div><div class="pass-bot"><div><div class="label">Terminal</div><div class="v">' + esc(f.terminal || '-') + '</div></div><div><div class="label">Gate</div><div class="v hl">' + esc(f.gate || 'TBA') + '</div></div><div><div class="label">Seat</div><div class="v">' + esc(f.seat || '-') + '</div></div></div></div>' +
-      (ar > Date.now() ? '<div class="card"><span class="label">Live status</span><div class="row"><div><div class="t">' + s[0] + '</div><div class="d">Source: simulated feed. Last checked ' + tf(Date.now(), MY_TZ) + '.</div></div><button class="btn sm" data-sim="' + f.id + '">Simulate update</button></div></div>' : '') +
+      (ar > Date.now() - 6 * 3600000 ? '<div class="card"><span class="label">Live status</span>' + liveRow(f) + '</div>' : '') +
       '<div class="card"><span class="label">Journey</span><ul class="timeline">' + tl + '</ul></div>' +
       '<div class="card"><span class="label">Booking</span><dl class="kv">' +
       '<dt>Booking reference</dt><dd class="mono">' + esc(f.ref || '-') + (f.ref ? '<button class="copy" data-copy="' + esc(f.ref) + '">Copy</button>' : '') + '</dd>' +
@@ -1498,6 +1542,7 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
     view = v; try { history.replaceState(null, '', '#' + v); } catch (e) { location.hash = v; }
     if (detail) { detail = null; document.getElementById('sheet').hidden = true; }
     render(); document.getElementById('scroll').scrollTop = 0;
+    if (v === 'live' || v === 'home' || v === 'flights') pollAll(false);
   }
   function tick() {
     document.querySelectorAll('[data-cd]').forEach(function (el) {
@@ -1506,7 +1551,10 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
     });
   }
   setInterval(tick, 30000);
-  setInterval(function () { if (view === 'live' && !detail) { lastChecked = Date.now(); render(); } }, 60000);
+  setInterval(function () { if (view === 'live' && !detail) render(); }, 60000);
+  setInterval(function () { pollAll(false); }, 300000);
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) pollAll(false); });
+  setTimeout(function () { pollAll(false); }, 1500);
 
   var toastT;
   function toast(title, body) {
@@ -1516,16 +1564,16 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
 
   /* ---------- actions ---------- */
   document.addEventListener('click', function (e) {
-    var el = e.target.closest('[data-go],[data-open],[data-act],[data-sim],[data-del],[data-copy],[data-fab],[data-reveal],[data-pdel],[data-tsub],[data-lsub],[data-live],[data-lview],[data-mapwx],[data-track],[data-untrack],[data-save],[data-hint],[data-sdate],[data-addfor],[data-addpax],[data-addcat],[data-addmode],[data-fdel]');
+    var el = e.target.closest('[data-go],[data-open],[data-act],[data-del],[data-copy],[data-fab],[data-reveal],[data-pdel],[data-tsub],[data-lsub],[data-live],[data-lview],[data-mapwx],[data-track],[data-untrack],[data-save],[data-hint],[data-sdate],[data-addfor],[data-addpax],[data-addcat],[data-addmode],[data-fdel]');
     if (!el) return;
     if (el.hasAttribute('data-fab')) { addWho = ''; if (fabTarget() === 'add') { addMode = ''; searchQ = ''; rFrom = ''; rTo = ''; } go(fabTarget()); return; }
     if (el.hasAttribute('data-mapwx')) { mapWx = !mapWx; render(); return; }
     if (el.hasAttribute('data-lview')) { lview = el.getAttribute('data-lview'); render(); document.getElementById('scroll').scrollTop = 0; return; }
-    if (el.hasAttribute('data-track')) { trackFlight(el.getAttribute('data-track')); return; }
+    if (el.hasAttribute('data-track')) { var tk = el.getAttribute('data-track'); hydrate(tk, function () { trackFlight(tk); }); return; }
     if (el.hasAttribute('data-untrack')) { var uid = el.getAttribute('data-untrack'); S.tracked = S.tracked.filter(function (x) { return x.id !== uid; }); S.alerts = S.alerts.filter(function (x) { return x.fid !== uid; }); save(); liveSel = null; render(); toast('Stopped tracking'); return; }
     if (el.hasAttribute('data-save')) { saveTracked(el.getAttribute('data-save')); return; }
     if (el.hasAttribute('data-fdel')) { var ff = findFlight(detail); if (ff) { ff.files = (ff.files || []).filter(function (x) { return x.id !== el.getAttribute('data-fdel'); }); save(); openDetail(detail); toast('Removed from the flight', 'The file stays in your Drive.'); } return; }
-    if (el.hasAttribute('data-addcat')) { openAddSheet(el.getAttribute('data-addcat')); return; }
+    if (el.hasAttribute('data-addcat')) { var ak = el.getAttribute('data-addcat'); hydrate(ak, function () { openAddSheet(ak); }); return; }
     if (el.hasAttribute('data-addmode')) { addMode = el.getAttribute('data-addmode'); rFrom = ''; rTo = ''; if (!addMode) searchQ = ''; render(); return; }
     if (el.hasAttribute('data-hint')) { searchQ = el.getAttribute('data-hint'); render(); return; }
     if (el.hasAttribute('data-sdate')) { searchDate = ymd(+el.getAttribute('data-sdate')); render(); return; }
@@ -1547,16 +1595,6 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
       try { navigator.clipboard.writeText(v).then(function () { toast('Copied', v); }, function () { toast('Select to copy', v); }); } catch (x) { toast('Select to copy', v); }
       return;
     }
-    if (el.hasAttribute('data-sim')) {
-      var f = findFlight(el.getAttribute('data-sim')); if (!f) return;
-      var pick = Math.random() < 0.5, al;
-      if (pick) { var add = 10 + Math.floor(Math.random() * 3) * 5; f.delay += add; al = { type: 'delay', title: f.no + ' delayed ' + add + ' more min', body: 'New departure ' + tf(effDep(f), AP[f.from].tz) + ' from ' + AP[f.from].n + '.' }; }
-      else { var g = (f.gate || 'B12'); var ng = g.replace(/\d+/, function (n) { return +n + 2; }); if (ng === g) ng = 'C3'; f.gate = ng; al = { type: 'gate', title: 'Gate change for ' + f.no, body: 'Gate ' + g + ' is now ' + ng + '.' }; }
-      S.alerts.push({ id: 'a' + (S.nextId++), fid: f.id, type: al.type, title: al.title, body: al.body, at: Date.now(), unread: true });
-      save(); toast(al.title, al.body);
-      if (detail) openDetail(f.id);
-      render(); return;
-    }
     if (el.hasAttribute('data-del')) {
       if (el.getAttribute('data-armed') || el.classList.contains('bpdel')) { var id = el.getAttribute('data-del'); S.flights = S.flights.filter(function (x) { return x.id !== id; }); S.tracked = S.tracked.filter(function (x) { return x.id !== id; }); S.alerts = S.alerts.filter(function (x) { return x.fid !== id; }); save(); closeDetail(); toast('Flight removed'); }
       else { el.setAttribute('data-armed', '1'); el.textContent = 'Tap again to delete'; }
@@ -1564,13 +1602,16 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
     }
     var act = el.getAttribute('data-act');
     if (act === 'back') closeDetail();
-    else if (act === 'refresh') { lastChecked = Date.now(); render(); toast('Status updated', 'Checked just now. Simulated feed.'); }
+    else if (act === 'refresh') {
+      var rf = findFlight(el.getAttribute('data-id') || liveSel); if (!rf) return;
+      if (!adbKey()) { toast('Live data key needed', 'Add it in Settings.'); return; }
+      pollFlight(rf, true).then(function (ch) { afterPoll(); toast(POLLERR ? 'Could not refresh' : 'Status updated', POLLERR || 'Checked live data just now.'); });
+    }
     else if (act === 'readall') { S.alerts.forEach(function (a) { a.unread = false; }); save(); render(); }
     else if (act === 'gsignin' || act === 'gsync') gSync(true);
     else if (act === 'gsignout') gOut();
-    else if (act === 'savekey') { var kv = (document.getElementById('adbkey') || {}).value; kv = (kv || '').trim(); if (kv) { try { localStorage.setItem(ADBK, kv); } catch (x) {} LIVE = {}; render(); toast('Key saved', 'Flight search now uses real schedules.'); } }
-    else if (act === 'clearkey') { try { localStorage.removeItem(ADBK); } catch (x) {} LIVE = {}; render(); toast('Key removed'); }
-    else if (act === 'resetdemo') { S = seed(); S.sample = !G.linked; save(); render(); toast('Sample data restored'); }
+    else if (act === 'savekey') { var kv = (document.getElementById('adbkey') || {}).value; kv = (kv || '').trim(); if (kv) { try { localStorage.setItem(ADBK, kv); } catch (x) {} LIVE = {}; SR = {}; render(); pollAll(true); toast('Key saved', 'Flight search and status now use live data.'); } }
+    else if (act === 'clearkey') { try { localStorage.removeItem(ADBK); } catch (x) {} LIVE = {}; SR = {}; render(); toast('Key removed'); }
     else if (act === 'clear') { S.flights = []; S.alerts = []; save(); render(); toast('All flights cleared'); }
   });
   document.addEventListener('change', function (e) {
