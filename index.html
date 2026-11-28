@@ -1535,7 +1535,7 @@ legend { font-family: var(--f-mono); font-size: 11px; letter-spacing: .08em; tex
       var f = LMF.f, p = LMF.p, a = AP[f.from], b = AP[f.to], pts = arcPoints(a, b), N = pts.length - 1, idx = Math.round(p * N);
       var m = LF.map(el, { zoomControl: false, attributionControl: true, worldCopyJump: true, zoomSnap: .25, tap: true });
       var tile = LF.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', { maxZoom: 12, className: 'sat', attribution: 'Imagery &copy; Esri' }).addTo(m);
-      LF.tileLayer('https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png', { subdomains: 'abcd', maxZoom: 12, attribution: '&copy; CARTO' }).addTo(m);
+      LF.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}', { maxZoom: 12, opacity: .85 }).addTo(m);
       var ll = pts.map(function (q) { return [q[1], q[0]]; });
       LF.polyline(ll, { color: '#fff', weight: 2, opacity: .55, dashArray: '2 6' }).addTo(m);
       if (idx > 0) LF.polyline(ll.slice(0, idx + 1), { color: getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#F2A900', weight: 3.5 }).addTo(m);
