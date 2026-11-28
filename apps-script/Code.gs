@@ -2,30 +2,38 @@
    The app registers this phone here (doPost). A time trigger (tick) checks live flight status and sends Web Push alerts.
    Web Push needs P-256 and AES-GCM, which Apps Script lacks, so they are implemented below in plain JavaScript (BigInt). */
 
+/* BigInt constants (the Apps Script editor rejects 123n literals) */
+var B0 = BigInt(0);
+var B1 = BigInt(1);
+var B2 = BigInt(2);
+var B3 = BigInt(3);
+var B4 = BigInt(4);
+var B8 = BigInt(8);
+var B64 = BigInt(64);
 /* ---------- P-256 + AES-GCM + HKDF in plain JS ---------- */
 var P = BigInt('0xffffffff00000001000000000000000000000000ffffffffffffffffffffffff');
 var N = BigInt('0xffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc632551');
 var GX = BigInt('0x6b17d1f2e12c4247f8bce6e563a440f277037d812deb33a0f4a13945d898c296');
 var GY = BigInt('0x4fe342e2fe1a7f9b8ee7eb4a7c0f9e162bce33576b315ececbb6406837bf51f5');
-function mod(a, m) { var r = a % m; return r >= 0n ? r : r + m; }
-function powmod(b, e, m) { var r = 1n; b = mod(b, m); while (e > 0n) { if (e & 1n) r = r * b % m; b = b * b % m; e >>= 1n; } return r; }
-function inv(a, m) { return powmod(a, m - 2n, m); }
+function mod(a, m) { var r = a % m; return r >= B0 ? r : r + m; }
+function powmod(b, e, m) { var r = B1; b = mod(b, m); while (e > B0) { if (e & B1) r = r * b % m; b = b * b % m; e >>= B1; } return r; }
+function inv(a, m) { return powmod(a, m - B2, m); }
 function pdbl(p) {
-  if (!p || p[1] === 0n) return null;
-  var X = p[0], Y = p[1], Z = p[2], d = Z * Z % P, g = Y * Y % P, b = X * g % P, a = 3n * mod(X - d, P) * ((X + d) % P) % P;
-  var X3 = mod(a * a - 8n * b, P), Z3 = mod((Y + Z) * (Y + Z) - g - d, P), Y3 = mod(a * (4n * b - X3) - 8n * g * g, P);
+  if (!p || p[1] === B0) return null;
+  var X = p[0], Y = p[1], Z = p[2], d = Z * Z % P, g = Y * Y % P, b = X * g % P, a = B3 * mod(X - d, P) * ((X + d) % P) % P;
+  var X3 = mod(a * a - B8 * b, P), Z3 = mod((Y + Z) * (Y + Z) - g - d, P), Y3 = mod(a * (B4 * b - X3) - B8 * g * g, P);
   return [X3, Y3, Z3];
 }
 function padd(p, q) {
   if (!p) return q; if (!q) return p;
   var Z1 = p[2], Z2 = q[2], Z1Z1 = Z1 * Z1 % P, Z2Z2 = Z2 * Z2 % P, U1 = p[0] * Z2Z2 % P, U2 = q[0] * Z1Z1 % P, S1 = p[1] * Z2 * Z2Z2 % P, S2 = q[1] * Z1 * Z1Z1 % P;
   if (U1 === U2) { return S1 === S2 ? pdbl(p) : null; }
-  var H = mod(U2 - U1, P), I = 4n * H * H % P, J = H * I % P, r = 2n * mod(S2 - S1, P) % P, V = U1 * I % P;
-  var X3 = mod(r * r - J - 2n * V, P), Y3 = mod(r * (V - X3) - 2n * S1 * J, P), Z3 = mod(((Z1 + Z2) * (Z1 + Z2) - Z1Z1 - Z2Z2) * H, P);
+  var H = mod(U2 - U1, P), I = B4 * H * H % P, J = H * I % P, r = B2 * mod(S2 - S1, P) % P, V = U1 * I % P;
+  var X3 = mod(r * r - J - B2 * V, P), Y3 = mod(r * (V - X3) - B2 * S1 * J, P), Z3 = mod(((Z1 + Z2) * (Z1 + Z2) - Z1Z1 - Z2Z2) * H, P);
   return [X3, Y3, Z3];
 }
 function pmul(k, x, y) {
-  var q = [x, y, 1n], r = null, bits = k.toString(2);
+  var q = [x, y, B1], r = null, bits = k.toString(2);
   for (var i = 0; i < bits.length; i++) { r = pdbl(r); if (bits[i] === '1') r = padd(r, q); }
   if (!r) return null; var zi = inv(r[2], P), z2 = zi * zi % P; return [r[0] * z2 % P, r[1] * z2 * zi % P];
 }
@@ -39,15 +47,15 @@ function hmac(key, data) { return Array.prototype.slice.call(Utilities.computeHm
 function sha256(data) { return Array.prototype.slice.call(Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, data.map(function (x) { return x > 127 ? x - 256 : x; }))).map(function (x) { return x & 255; }); }
 function hkdf(salt, ikm, info, len) { var prk = hmac(salt, ikm), t = [], o = [], c = 1; while (o.length < len) { t = hmac(prk, cat(t, info, [c++])); o = o.concat(t); } return o.slice(0, len); }
 function randBytes(n) { var o = []; while (o.length < n) { o = o.concat(sha256(u8(Utilities.getUuid() + Utilities.getUuid() + Date.now() + Math.random()))); } return o.slice(0, n); }
-function randScalar() { for (;;) { var k = b2i(randBytes(32)); if (k > 0n && k < N) return k; } }
+function randScalar() { for (;;) { var k = b2i(randBytes(32)); if (k > B0 && k < N) return k; } }
 function rfc6979(d, h) {
   var x = i2b(d, 32), h1 = i2b(mod(b2i(h), N), 32), V = []; for (var i = 0; i < 32; i++) V.push(1); var K = []; for (i = 0; i < 32; i++) K.push(0);
   K = hmac(K, cat(V, [0], x, h1)); V = hmac(K, V); K = hmac(K, cat(V, [1], x, h1)); V = hmac(K, V);
-  for (;;) { V = hmac(K, V); var k = b2i(V); if (k > 0n && k < N) return k; K = hmac(K, cat(V, [0])); V = hmac(K, V); }
+  for (;;) { V = hmac(K, V); var k = b2i(V); if (k > B0 && k < N) return k; K = hmac(K, cat(V, [0])); V = hmac(K, V); }
 }
 function ecdsaSign(d, msg) {
   var h = sha256(msg), z = b2i(h);
-  for (;;) { var k = rfc6979(d, h), R = pmul(k, GX, GY), r = mod(R[0], N); if (r === 0n) continue; var s = mod(inv(k, N) * (z + r * d), N); if (s === 0n) continue; return i2b(r, 32).concat(i2b(s, 32)); }
+  for (;;) { var k = rfc6979(d, h), R = pmul(k, GX, GY), r = mod(R[0], N); if (r === B0) continue; var s = mod(inv(k, N) * (z + r * d), N); if (s === B0) continue; return i2b(r, 32).concat(i2b(s, 32)); }
 }
 var SBOX = (function () { var s = [], p = 1, q = 1; do { p = p ^ ((p << 1) & 255) ^ (p & 128 ? 0x1b : 0); q ^= q << 1; q ^= q << 2; q ^= q << 4; q &= 255; if (q & 128) q ^= 0x09; var x = q ^ ((q << 1) | (q >> 7)) ^ ((q << 2) | (q >> 6)) ^ ((q << 3) | (q >> 5)) ^ ((q << 4) | (q >> 4)); s[p] = (x ^ 0x63) & 255; } while (p !== 1); s[0] = 0x63; return s; })();
 function xt(a) { return ((a << 1) ^ (a & 128 ? 0x1b : 0)) & 255; }
@@ -66,15 +74,15 @@ function aesBlock(w, inp) {
   }
   return s;
 }
-function gmul(x, y) { var z = 0n, v = y, R = BigInt('0xe1000000000000000000000000000000'); for (var i = 127; i >= 0; i--) { if ((x >> BigInt(i)) & 1n) z ^= v; v = (v & 1n) ? (v >> 1n) ^ R : v >> 1n; } return z; }
+function gmul(x, y) { var z = B0, v = y, R = BigInt('0xe1000000000000000000000000000000'); for (var i = 127; i >= 0; i--) { if ((x >> BigInt(i)) & B1) z ^= v; v = (v & B1) ? (v >> B1) ^ R : v >> B1; } return z; }
 function gcmEncrypt(key, iv, pt) {
   var w = aesKey(key), H = b2i(aesBlock(w, new Array(16).fill(0))), ct = [], ctr = cat(iv, [0, 0, 0, 1]), j0 = ctr.slice(), n, i;
   for (var off = 0; off < pt.length; off += 16) {
     n = (ctr[15] | (ctr[14] << 8) | (ctr[13] << 16) | (ctr[12] << 24)) + 1 >>> 0; ctr[12] = n >>> 24; ctr[13] = (n >>> 16) & 255; ctr[14] = (n >>> 8) & 255; ctr[15] = n & 255;
     var ks = aesBlock(w, ctr), blk = pt.slice(off, off + 16); for (i = 0; i < blk.length; i++) ct.push(blk[i] ^ ks[i]);
   }
-  var X = 0n; for (off = 0; off < ct.length; off += 16) { var c = ct.slice(off, off + 16); while (c.length < 16) c.push(0); X = gmul(X ^ b2i(c), H); }
-  X = gmul(X ^ ((0n << 64n) | BigInt(ct.length * 8)), H);
+  var X = B0; for (off = 0; off < ct.length; off += 16) { var c = ct.slice(off, off + 16); while (c.length < 16) c.push(0); X = gmul(X ^ b2i(c), H); }
+  X = gmul(X ^ ((B0 << B64) | BigInt(ct.length * 8)), H);
   var tag = i2b(X ^ b2i(aesBlock(w, j0)), 16); return ct.concat(tag);
 }
 /* RFC 8291 aes128gcm Web Push payload */
